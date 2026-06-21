@@ -1,0 +1,80 @@
+import { UserModel } from '../models/User.model';
+import { RoleModel } from '../models/Role.model';
+import { hashPassword, comparePassword } from '../utils/bcrypt.utils';
+import { env } from '../config/env';
+import { EMPLOYEE_LEAD_PERMISSIONS } from '../constants/permissions';
+import { dedupeEmployeeRole } from './dedupeRoles';
+
+export const seedAdmin = async (): Promise<void> => {
+  try {
+    let masterAdminRole = await RoleModel.findOne({ roleName: 'master_admin' });
+    if (!masterAdminRole) {
+      masterAdminRole = await RoleModel.create({
+        roleName: 'master_admin',
+        permissions: ['*'],
+        description: 'Full system access — all permissions granted',
+        status: 'active',
+        isSystem: true,
+      });
+      console.log('✅ master_admin role created');
+    }
+
+    await dedupeEmployeeRole();
+
+    let employeeRole = await RoleModel.findOne({ roleName: 'employee', isSystem: true });
+    if (!employeeRole) {
+      employeeRole = await RoleModel.create({
+        roleName: 'employee',
+        permissions: EMPLOYEE_LEAD_PERMISSIONS,
+        description: 'Standard employee access with assigned lead management',
+        status: 'active',
+        isSystem: true,
+      });
+      console.log('✅ employee role created');
+    }
+
+    const existingAdmin = await UserModel.findOne({ email: env.ADMIN_EMAIL }).select('+password');
+
+    if (existingAdmin) {
+      const passwordMatches = await comparePassword(env.ADMIN_PASSWORD, existingAdmin.password);
+      const hashedPassword = passwordMatches ? null : await hashPassword(env.ADMIN_PASSWORD);
+
+      await UserModel.findByIdAndUpdate(existingAdmin._id, {
+        ...(hashedPassword && { password: hashedPassword }),
+        name: env.ADMIN_NAME,
+        status: 'active',
+        role: masterAdminRole._id,
+        forcePasswordChange: false,
+      });
+
+      if (hashedPassword) {
+        console.log(`✅ Master admin password synced from .env: ${env.ADMIN_EMAIL}`);
+      } else {
+        console.log('ℹ️  Master admin verified and updated');
+      }
+
+      await UserModel.updateMany({}, { forcePasswordChange: false });
+      return;
+    }
+
+    const hashedPassword = await hashPassword(env.ADMIN_PASSWORD);
+
+    await UserModel.create({
+      employeeId: 'EMP000',
+      name: env.ADMIN_NAME,
+      email: env.ADMIN_EMAIL,
+      password: hashedPassword,
+      role: masterAdminRole._id,
+      status: 'active',
+      forcePasswordChange: false,
+      joiningDate: new Date(),
+    });
+
+    console.log(`✅ Master admin seeded: ${env.ADMIN_EMAIL}`);
+
+    await UserModel.updateMany({}, { forcePasswordChange: false });
+  } catch (error) {
+    console.error('❌ Failed to seed admin:', error);
+    throw error;
+  }
+};
