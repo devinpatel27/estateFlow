@@ -52,7 +52,7 @@ Auth uses a **cookie on the Vercel domain** + **Bearer token** in API calls. Fro
 |---------|-------|
 | Root Directory | **`backend`** (not `crm/backend`) |
 | Runtime | Node |
-| Build Command | `npm run render:build` |
+| Build Command | **`npm install && npm run build`** (NOT `yarn`) |
 | Start Command | **`npm start`** (NOT `npm run dev`) |
 | Health Check | `/health` |
 
