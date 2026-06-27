@@ -8,11 +8,10 @@
   },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only --exit-child src/server.ts",
-    "build": "tsc",
-    "start": "npm run build && node dist/server.js",
-    "start:prod": "node dist/server.js",
-    "render:build": "npm install --include=dev && npm run build",
-    "render:start": "npm run render:build && npm run start:prod",
+    "build": "tsc --pretty false",
+    "start": "node dist/server.js",
+    "render:build": "npm ci --include=dev && npm run build",
+    "render:start": "npm run render:build && npm start",
     "seed": "ts-node src/scripts/seedAdmin.ts"
   },
   "dependencies": {

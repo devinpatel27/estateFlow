@@ -5,35 +5,54 @@
 | Setting | Value |
 |---------|-------|
 | Root Directory | `backend` |
-| Build Command | `npm install --include=dev && npm run build` |
+| Build Command | `npm ci --include=dev && npm run build` |
 | Start Command | `npm start` |
 
-**Note:** The `backend/ $` prefix in Render's UI is only a path hint — do **not** type it into the command field. Enter only the command itself.
+**Do not use `yarn`.** The `$` prefix in Render UI is a path hint only — do not type it.
 
 ---
 
-## If deploy still fails
+## Environment variable (important for Free tier)
 
-Set **Start Command** to:
+Add this in Render → **Environment**:
+
+| Key | Value |
+|-----|-------|
+| `NODE_OPTIONS` | `--max-old-space-size=384` |
+
+This prevents **JavaScript heap out of memory** during `tsc` build on 512 MB instances.
+
+---
+
+## If build still runs out of memory
+
+**Option A — Upgrade instance (recommended for production)**
+
+Render → Settings → Instance Type → **Starter** ($7/mo, 512 MB dedicated)
+
+**Option B — Single combined command**
+
+Set **Build Command** to empty or `echo skip` and **Start Command** to:
 
 ```
 npm run render:start
 ```
 
-This installs dependencies, builds TypeScript, then starts the server.
+This installs, builds, and starts in one step (slower cold start).
 
 ---
 
-## Verify
-
-After deploy, open: `https://realview-realty-crm.onrender.com/health`
-
-Expected: `{"status":"ok","timestamp":"..."}`
-
-## Required env vars on Render
+## Required env vars
 
 - `MONGODB_URI`
 - `JWT_SECRET` (32+ characters)
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
-- `FRONTEND_URL` (your Vercel URL, no trailing slash)
+- `FRONTEND_URL` (Vercel URL, no trailing slash)
+- `PORT` = `10000`
+
+---
+
+## Verify
+
+`https://realview-realty-crm.onrender.com/health` → `{"status":"ok",...}`
