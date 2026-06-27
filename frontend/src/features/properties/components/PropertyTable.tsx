@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/common/DataTable';
@@ -19,27 +20,20 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { PropertyDashboard } from './PropertyDashboard';
 import { getPropertyColumns } from './columns';
 import { propertyService } from '../services/property.service';
-import { Property, PropertyDashboardStats } from '../types/property.types';
+import { Property } from '../types/property.types';
+import { usePropertyList, usePropertyDashboardStats } from '../hooks/useProperties';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useDebounce } from '@/hooks/useDebounce';
 import { PERMISSIONS, PROPERTY_PURPOSES, PROPERTY_STATUSES } from '@/lib/constants';
 
 export function PropertyTable() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { hasPermission, isReady } = usePermissions();
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [stats, setStats] = useState<PropertyDashboardStats>();
-  const [totalCount, setTotalCount] = useState(0);
-  const [pageCount, setPageCount] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
+  const { properties, totalCount, pageCount, isLoading, params, updateParams, refetch } =
+    usePropertyList();
+  const { stats, isLoading: statsLoading } = usePropertyDashboardStats();
   const [deleteTarget, setDeleteTarget] = useState<Property | null>(null);
-  const [params, setParams] = useState({
-    page: 1,
-    limit: 10,
-    search: '',
-    purpose: '',
-    status: '',
-  });
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebounce(searchInput, 300);
 
@@ -48,39 +42,10 @@ export function PropertyTable() {
   const canPublish = isReady && hasPermission(PERMISSIONS.PROPERTY_PUBLISH);
   const canCreate = isReady && hasPermission(PERMISSIONS.PROPERTY_CREATE);
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const [listRes, dashRes] = await Promise.all([
-        propertyService.list({
-          page: params.page,
-          limit: params.limit,
-          search: params.search || undefined,
-          purpose: (params.purpose as Property['purpose']) || undefined,
-          status: (params.status as Property['status']) || undefined,
-        }),
-        propertyService.getDashboard(),
-      ]);
-      if (listRes.success) {
-        setProperties(listRes.data || []);
-        setTotalCount(listRes.pagination?.total || 0);
-        setPageCount(listRes.pagination?.totalPages || 1);
-      }
-      if (dashRes.success) setStats(dashRes.data);
-    } catch {
-      toast.error('Failed to load properties');
-    } finally {
-      setIsLoading(false);
-    }
+  const refreshAll = () => {
+    void refetch();
+    void queryClient.invalidateQueries({ queryKey: ['properties-dashboard'] });
   };
-
-  useEffect(() => {
-    fetchData();
-  }, [params.page, params.limit, params.search, params.purpose, params.status]);
-
-  useEffect(() => {
-    setParams((prev) => ({ ...prev, search: debouncedSearch, page: 1 }));
-  }, [debouncedSearch]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -88,7 +53,7 @@ export function PropertyTable() {
       await propertyService.delete(deleteTarget._id);
       toast.success('Property deleted');
       setDeleteTarget(null);
-      fetchData();
+      refreshAll();
     } catch {
       toast.error('Failed to delete property');
     }
@@ -98,7 +63,7 @@ export function PropertyTable() {
     try {
       await propertyService.togglePublish(property._id);
       toast.success(property.publishOnWebsite ? 'Unpublished' : 'Published');
-      fetchData();
+      refreshAll();
     } catch {
       toast.error('Failed to update publish status');
     }
@@ -108,7 +73,7 @@ export function PropertyTable() {
     try {
       await propertyService.toggleFeature(property._id);
       toast.success(property.isFeatured ? 'Removed from featured' : 'Marked as featured');
-      fetchData();
+      refreshAll();
     } catch {
       toast.error('Failed to update featured status');
     }
@@ -118,7 +83,7 @@ export function PropertyTable() {
     canEdit,
     canDelete,
     canPublish,
-    onRefresh: fetchData,
+    onRefresh: refreshAll,
     onDelete: setDeleteTarget,
     onTogglePublish: handleTogglePublish,
     onToggleFeature: handleToggleFeature,
@@ -126,15 +91,15 @@ export function PropertyTable() {
 
   return (
     <>
-      <PropertyDashboard stats={stats} isLoading={isLoading && !stats} />
+      <PropertyDashboard stats={stats} isLoading={statsLoading} />
       <DataTable
         columns={columns}
         data={properties}
         isLoading={isLoading}
         pageCount={pageCount}
         totalCount={totalCount}
-        pageIndex={params.page - 1}
-        onPageChange={(page) => setParams((prev) => ({ ...prev, page: page + 1 }))}
+        pageIndex={params.page! - 1}
+        onPageChange={(page) => updateParams({ page: page + 1 })}
         toolbar={
           <>
             <div className="relative min-w-[200px] flex-1 sm:max-w-[240px]">
@@ -149,7 +114,10 @@ export function PropertyTable() {
             <Select
               value={params.purpose || 'all'}
               onValueChange={(v) =>
-                setParams((prev) => ({ ...prev, purpose: v === 'all' ? '' : v, page: 1 }))
+                updateParams({
+                  purpose: v === 'all' ? undefined : (v as Property['purpose']),
+                  page: 1,
+                })
               }
             >
               <SelectTrigger className="crm-select-trigger w-[120px] text-sm">
@@ -165,7 +133,10 @@ export function PropertyTable() {
             <Select
               value={params.status || 'all'}
               onValueChange={(v) =>
-                setParams((prev) => ({ ...prev, status: v === 'all' ? '' : v, page: 1 }))
+                updateParams({
+                  status: v === 'all' ? undefined : (v as Property['status']),
+                  page: 1,
+                })
               }
             >
               <SelectTrigger className="crm-select-trigger w-[130px] text-sm">

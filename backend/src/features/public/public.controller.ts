@@ -55,6 +55,7 @@ export const publicController = {
     try {
       const property = await propertyRepository.findBySlug(req.params.slug, true);
       if (!property) throw new AppError('Property not found', 404);
+      void propertyRepository.incrementViewCount(String(property._id));
       sendSuccess(res, 'Property retrieved successfully', toPublicProperty(property as never));
     } catch (error) {
       next(error);

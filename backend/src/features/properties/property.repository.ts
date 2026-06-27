@@ -169,6 +169,11 @@ export const propertyRepository = {
     return PropertyModel.findByIdAndUpdate(id, { $inc: { inquiryCount: 1 } }, { new: true }).lean();
   },
 
+  incrementViewCount: async (id: string) => {
+    if (!isValidObjectId(id)) return null;
+    return PropertyModel.findByIdAndUpdate(id, { $inc: { viewCount: 1 } }).lean();
+  },
+
   findInquiries: async (propertyId: string, skip: number, limit: number) => {
     if (!isValidObjectId(propertyId)) return { data: [], total: 0 };
     const query = { propertyId: toObjectId(propertyId) };

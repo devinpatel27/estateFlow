@@ -481,6 +481,7 @@ html.crm-app body {
 
 .crm-toolbar-input {
   height: 2.25rem !important;
+  min-height: 2.25rem !important;
   border-radius: 0.625rem !important;
   border: 1px solid oklch(0.922 0.004 264) !important;
   background: oklch(0.99 0 0) !important;
@@ -517,8 +518,46 @@ html.crm-app body {
   min-height: 2.25rem !important;
 }
 
+.crm-table-toolbar > div:first-child {
+  min-width: 0;
+  flex: 1 1 100%;
+}
+
 .crm-table-toolbar .crm-filter-tabs button {
   height: calc(2.25rem - 0.25rem);
+}
+
+/* Filter tabs — consistent height outside table toolbar too */
+.crm-filter-tabs {
+  height: 2.25rem;
+  min-height: 2.25rem;
+}
+
+.crm-filter-tabs button {
+  height: calc(2.25rem - 0.25rem);
+}
+
+.crm-workboard-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid oklch(0.922 0.004 264 / 0.7);
+  background: oklch(0.98 0.002 264 / 0.6);
+  padding: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .crm-workboard-toolbar {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.dark .crm-workboard-toolbar {
+  border-color: oklch(1 0 0 / 0.1);
+  background: oklch(0.18 0.02 264 / 0.5);
 }
 
 .crm-back-link {
@@ -703,7 +742,9 @@ html.crm-app body {
 }
 
 .crm-react-datepicker .react-datepicker__day--in-range,
-.crm-react-datepicker .react-datepicker__day--in-selecting-range {
+.crm-react-datepicker .react-datepicker__day--in-selecting-range,
+.crm-react-datepicker-inline .react-datepicker__day--in-range,
+.crm-react-datepicker-inline .react-datepicker__day--in-selecting-range {
   background: oklch(0.55 0.18 264 / 0.14) !important;
   color: oklch(0.45 0.18 264) !important;
   border-radius: 0;
@@ -712,16 +753,70 @@ html.crm-app body {
 .crm-react-datepicker .react-datepicker__day--range-start,
 .crm-react-datepicker .react-datepicker__day--range-end,
 .crm-react-datepicker .react-datepicker__day--selecting-range-start,
-.crm-react-datepicker .react-datepicker__day--selecting-range-end {
+.crm-react-datepicker .react-datepicker__day--selecting-range-end,
+.crm-react-datepicker-inline .react-datepicker__day--range-start,
+.crm-react-datepicker-inline .react-datepicker__day--range-end,
+.crm-react-datepicker-inline .react-datepicker__day--selecting-range-start,
+.crm-react-datepicker-inline .react-datepicker__day--selecting-range-end {
   background: linear-gradient(135deg, oklch(0.55 0.18 264), oklch(0.48 0.2 270)) !important;
   color: white !important;
   border-radius: 9999px;
 }
 
 .crm-react-datepicker .react-datepicker__day--in-range:hover,
-.crm-react-datepicker .react-datepicker__day--in-selecting-range:hover {
+.crm-react-datepicker .react-datepicker__day--in-selecting-range:hover,
+.crm-react-datepicker-inline .react-datepicker__day--in-range:hover,
+.crm-react-datepicker-inline .react-datepicker__day--in-selecting-range:hover {
   background: oklch(0.55 0.18 264 / 0.22) !important;
   color: oklch(0.45 0.18 264) !important;
+}
+
+.crm-react-datepicker-inline .react-datepicker__day--selected,
+.crm-react-datepicker-inline .react-datepicker__day--keyboard-selected {
+  background: linear-gradient(135deg, oklch(0.55 0.18 264), oklch(0.48 0.2 270)) !important;
+  color: white !important;
+  font-weight: 600;
+  box-shadow: 0 4px 14px -3px oklch(0.55 0.18 264 / 0.55);
+  border-radius: 9999px;
+}
+
+.crm-react-datepicker-inline .react-datepicker__day {
+  width: 2.25rem;
+  line-height: 2.25rem;
+  margin: 0.125rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: oklch(0.25 0.02 264);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.crm-react-datepicker-inline .react-datepicker__day:hover {
+  background: oklch(0.55 0.18 264 / 0.12) !important;
+  color: oklch(0.55 0.18 264) !important;
+  border-radius: 9999px;
+}
+
+.crm-react-datepicker-inline .react-datepicker__day--today {
+  font-weight: 700;
+  color: oklch(0.55 0.18 264);
+}
+
+.crm-react-datepicker-inline .react-datepicker__day--today.react-datepicker__day--range-start,
+.crm-react-datepicker-inline .react-datepicker__day--today.react-datepicker__day--range-end,
+.crm-react-datepicker-inline .react-datepicker__day--today.react-datepicker__day--selecting-range-start,
+.crm-react-datepicker-inline .react-datepicker__day--today.react-datepicker__day--selecting-range-end {
+  box-shadow: 0 4px 14px -3px oklch(0.55 0.18 264 / 0.55);
+}
+
+.crm-react-datepicker-inline .react-datepicker__day--today:not(.react-datepicker__day--range-start):not(.react-datepicker__day--range-end):not(.react-datepicker__day--in-range) {
+  box-shadow: inset 0 0 0 1.5px oklch(0.55 0.18 264 / 0.35);
+}
+
+.crm-react-datepicker-range .react-datepicker {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
 }
 
 .crm-react-datepicker .react-datepicker__day--today {
@@ -864,4 +959,26 @@ button.crm-btn-interactive[class*='outline']:hover:not(:disabled) {
 
 .dark button.crm-btn-interactive[class*='outline']:hover:not(:disabled) {
   background: oklch(0.22 0.02 264 / 0.8);
+}
+
+@media print {
+  aside,
+  header,
+  nav {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  .reports-layout {
+    gap: 1rem !important;
+  }
+
+  .crm-card {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import { Menu, Moon, Sun, LogOut, User, Key, Bell } from 'lucide-react';
+import { Menu, Moon, Sun, LogOut, User, Key } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,11 @@ import { getInitials, getImageUrl, formatRoleName } from '@/lib/utils';
 import { useMounted } from '@/hooks/useMounted';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Breadcrumb } from './Breadcrumb';
+
+const SmartFilters = dynamic(
+  () => import('./SmartFilters').then((m) => ({ default: m.SmartFilters })),
+  { ssr: false }
+);
 
 export function Header() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -49,11 +55,7 @@ export function Header() {
 
       {/* Right actions */}
       <div className="flex items-center gap-1">
-        {/* Notifications (placeholder) */}
-        <Button variant="ghost" size="icon" className="relative" title="Notifications">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary" />
-        </Button>
+        <SmartFilters />
 
         {/* Theme toggle */}
         <Button

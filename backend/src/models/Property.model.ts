@@ -54,6 +54,7 @@ export interface IProperty extends Document {
   showPrice: boolean;
   hideExactLocation: boolean;
   inquiryCount: number;
+  viewCount: number;
   ownerId?: Types.ObjectId;
   dealId?: Types.ObjectId;
   bookingId?: Types.ObjectId;
@@ -114,6 +115,7 @@ const propertySchema = new Schema<IProperty>(
     showPrice: { type: Boolean, default: true },
     hideExactLocation: { type: Boolean, default: true },
     inquiryCount: { type: Number, default: 0, min: 0 },
+    viewCount: { type: Number, default: 0, min: 0 },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User' },
     dealId: { type: Schema.Types.ObjectId },
     bookingId: { type: Schema.Types.ObjectId },

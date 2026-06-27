@@ -61,68 +61,70 @@ export function VisitTable() {
   });
 
   const toolbar = (
-    <>
-      <div className="relative min-w-[200px] flex-1 sm:max-w-[240px]">
-        <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search customer, mobile, lead ID..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="crm-toolbar-input pl-9 text-sm"
-        />
+    <div className="w-full min-w-0 space-y-2">
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(180px,1fr)_auto_auto_auto] md:items-center">
+        <div className="relative min-w-0">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search customer, mobile, lead ID..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="crm-toolbar-input w-full pl-9 text-sm"
+          />
+        </div>
+        <Select
+          value={params.type || 'all'}
+          onValueChange={(v) => updateParams({ type: v === 'all' ? undefined : v, page: 1 })}
+        >
+          <SelectTrigger className="crm-select-trigger w-full text-sm md:w-[140px]">
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            {VISIT_TYPES.map((t) => (
+              <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={params.status || 'all'}
+          onValueChange={(v) => updateParams({ status: v === 'all' ? undefined : v, page: 1 })}
+        >
+          <SelectTrigger className="crm-select-trigger w-full text-sm md:w-[132px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            {VISIT_STATUSES.map((s) => (
+              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {canFavorite && (
+          <FilterTabs
+            aria-label="Favorite filter"
+            value={params.favorite === true ? 'true' : params.favorite === false ? 'false' : 'all'}
+            onChange={(v) =>
+              updateParams({
+                favorite: v === 'true' ? true : v === 'false' ? false : undefined,
+                page: 1,
+              })
+            }
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'true', label: 'Favorites', icon: <Star className="h-3 w-3" /> },
+              { value: 'false', label: 'Non-favorites' },
+            ]}
+          />
+        )}
       </div>
-      <Select
-        value={params.type || 'all'}
-        onValueChange={(v) => updateParams({ type: v === 'all' ? undefined : v, page: 1 })}
-      >
-        <SelectTrigger className="crm-select-trigger w-[140px] text-sm">
-          <SelectValue placeholder="Type" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Types</SelectItem>
-          {VISIT_TYPES.map((t) => (
-            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select
-        value={params.status || 'all'}
-        onValueChange={(v) => updateParams({ status: v === 'all' ? undefined : v, page: 1 })}
-      >
-        <SelectTrigger className="crm-select-trigger w-[132px] text-sm">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Status</SelectItem>
-          {VISIT_STATUSES.map((s) => (
-            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {canFavorite && (
-      <FilterTabs
-        aria-label="Favorite filter"
-        value={params.favorite === true ? 'true' : params.favorite === false ? 'false' : 'all'}
-        onChange={(v) =>
-          updateParams({
-            favorite: v === 'true' ? true : v === 'false' ? false : undefined,
-            page: 1,
-          })
-        }
-        options={[
-          { value: 'all', label: 'All' },
-          { value: 'true', label: 'Favorites', icon: <Star className="h-3 w-3" /> },
-          { value: 'false', label: 'Non-favorites' },
-        ]}
-      />
-      )}
       <DateRangePicker
         dateFrom={params.dateFrom}
         dateTo={params.dateTo}
         onChange={(range) => updateParams({ ...range, page: 1 })}
-        className="w-[148px]"
+        className="w-full sm:w-auto"
       />
-    </>
+    </div>
   );
 
   const toolbarActions = canCreate ? (

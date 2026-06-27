@@ -25,6 +25,7 @@ export function useDashboard() {
             : null,
       };
     },
+    staleTime: 120_000,
   });
 
   return {

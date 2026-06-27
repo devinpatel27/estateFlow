@@ -28,3 +28,35 @@ dashboardRoutes.get(
   ),
   dashboardController.getLeadStats
 );
+
+dashboardRoutes.get(
+  '/overview',
+  authorizeOneOf(
+    PERMISSIONS.DASHBOARD_READ,
+    PERMISSIONS.LEAD_READ,
+    PERMISSIONS.LEAD_READ_ASSIGNED
+  ),
+  dashboardController.getOverview
+);
+
+dashboardRoutes.get(
+  '/employee-performance',
+  authorizeOneOf(PERMISSIONS.LEAD_READ, PERMISSIONS.DASHBOARD_READ),
+  dashboardController.getEmployeePerformance
+);
+
+dashboardRoutes.get(
+  '/employees/:employeeId/leads',
+  authorizeOneOf(PERMISSIONS.LEAD_READ, PERMISSIONS.DASHBOARD_READ),
+  dashboardController.getEmployeeLeadStream
+);
+
+dashboardRoutes.get(
+  '/leads/:leadId/follow-up-journey',
+  authorizeOneOf(
+    PERMISSIONS.LEAD_READ,
+    PERMISSIONS.LEAD_READ_ASSIGNED,
+    PERMISSIONS.DASHBOARD_READ
+  ),
+  dashboardController.getLeadFollowUpJourney
+);

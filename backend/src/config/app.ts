@@ -16,6 +16,7 @@ import { propertyRoutes } from '../features/properties/property.routes';
 import { amenityRoutes } from '../features/amenities/amenity.routes';
 import { settingsRoutes } from '../features/settings/settings.routes';
 import { publicRoutes } from '../features/public/public.routes';
+import { reportRoutes } from '../features/reports/reports.routes';
 
 export const createApp = (): Application => {
   const app = express();
@@ -56,6 +57,7 @@ export const createApp = (): Application => {
   app.use('/api/property-amenities', amenityRoutes);
   app.use('/api/settings', settingsRoutes);
   app.use('/api/public', publicRoutes);
+  app.use('/api/reports', reportRoutes);
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });

@@ -1,13 +1,29 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/common/PageHeader';
-import { EmployeeTable } from '@/features/employees/components/EmployeeTable';
-import { AddEmployeeDialog } from '@/features/employees/components/AddEmployeeDialog';
+import { TablePageSkeleton } from '@/components/common/PageSkeletons';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/constants';
+
+const EmployeeTable = dynamic(
+  () =>
+    import('@/features/employees/components/EmployeeTable').then((m) => ({
+      default: m.EmployeeTable,
+    })),
+  { loading: () => <TablePageSkeleton /> }
+);
+
+const AddEmployeeDialog = dynamic(
+  () =>
+    import('@/features/employees/components/AddEmployeeDialog').then((m) => ({
+      default: m.AddEmployeeDialog,
+    })),
+  { ssr: false }
+);
 
 export default function EmployeesPage() {
   const { hasPermission, isReady } = usePermissions();

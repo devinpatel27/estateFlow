@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { type LucideIcon } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -8,8 +9,9 @@ interface StatsCardProps {
   value: number | string;
   icon: LucideIcon;
   description?: string;
-  color?: 'blue' | 'emerald' | 'amber' | 'rose';
+  color?: 'blue' | 'emerald' | 'amber' | 'rose' | 'violet' | 'orange' | 'sky';
   isLoading?: boolean;
+  href?: string;
 }
 
 const colorMap = {
@@ -33,6 +35,21 @@ const colorMap = {
     icon: 'text-rose-600 dark:text-rose-400',
     iconBg: 'bg-rose-100 dark:bg-rose-900/50',
   },
+  violet: {
+    bg: 'bg-violet-50 dark:bg-violet-950/30',
+    icon: 'text-violet-600 dark:text-violet-400',
+    iconBg: 'bg-violet-100 dark:bg-violet-900/50',
+  },
+  orange: {
+    bg: 'bg-orange-50 dark:bg-orange-950/30',
+    icon: 'text-orange-600 dark:text-orange-400',
+    iconBg: 'bg-orange-100 dark:bg-orange-900/50',
+  },
+  sky: {
+    bg: 'bg-sky-50 dark:bg-sky-950/30',
+    icon: 'text-sky-600 dark:text-sky-400',
+    iconBg: 'bg-sky-100 dark:bg-sky-900/50',
+  },
 };
 
 export function StatsCard({
@@ -42,34 +59,51 @@ export function StatsCard({
   description,
   color = 'blue',
   isLoading,
+  href,
 }: StatsCardProps) {
   const colors = colorMap[color];
 
   if (isLoading) {
     return (
       <Card className="p-5">
-        <div className="flex items-center justify-between mb-3">
+        <div className="mb-3 flex items-center justify-between">
           <Skeleton className="h-4 w-28" />
           <Skeleton className="h-10 w-10 rounded-xl" />
         </div>
-        <Skeleton className="h-8 w-16 mb-1" />
+        <Skeleton className="mb-1 h-8 w-16" />
         <Skeleton className="h-3 w-24" />
       </Card>
     );
   }
 
-  return (
-    <Card className={cn('crm-card p-5 border-0 shadow-sm', colors.bg)}>
-      <div className="flex items-start justify-between mb-3">
+  const content = (
+    <>
+      <div className="mb-3 flex items-start justify-between">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', colors.iconBg)}>
-          <Icon className={cn('w-5 h-5', colors.icon)} />
+        <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', colors.iconBg)}>
+          <Icon className={cn('h-5 w-5', colors.icon)} />
         </div>
       </div>
-      <p className="text-3xl font-bold text-foreground tabular-nums">{value}</p>
+      <p className="text-3xl font-bold tabular-nums text-foreground">{value}</p>
       {description && (
-        <p className="text-xs text-muted-foreground mt-1">{description}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
       )}
-    </Card>
+    </>
   );
+
+  const className = cn(
+    'crm-card border-0 p-5 shadow-sm transition duration-200',
+    colors.bg,
+    href && 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md'
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={cn('block rounded-xl', className)}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <Card className={className}>{content}</Card>;
 }

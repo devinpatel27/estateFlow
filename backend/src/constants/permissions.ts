@@ -33,11 +33,14 @@ export const PERMISSIONS = {
   PROPERTY_PUBLISH: 'property:publish',
   PROPERTY_MASTER_MANAGE: 'property:master:manage',
   SETTINGS_MANAGE: 'settings:manage',
+  REPORT_READ: 'report:read',
+  REPORT_EXPORT: 'report:export',
   WILDCARD: '*',
 } as const;
 
 export const EMPLOYEE_LEAD_PERMISSIONS = [
   PERMISSIONS.DASHBOARD_READ,
+  PERMISSIONS.REPORT_READ,
   PERMISSIONS.PROFILE_UPDATE,
   PERMISSIONS.LEAD_READ_ASSIGNED,
   PERMISSIONS.LEAD_UPDATE,

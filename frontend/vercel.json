@@ -1,0 +1,6 @@
+# Vercel reads this when Root Directory is set to `crm/frontend`
+{
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build"
+}

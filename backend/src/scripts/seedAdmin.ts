@@ -31,6 +31,16 @@ export const seedAdmin = async (): Promise<void> => {
         isSystem: true,
       });
       console.log('✅ employee role created');
+    } else {
+      const missing = EMPLOYEE_LEAD_PERMISSIONS.filter(
+        (p) => !employeeRole!.permissions.includes(p)
+      );
+      if (missing.length > 0) {
+        await RoleModel.findByIdAndUpdate(employeeRole._id, {
+          permissions: [...new Set([...employeeRole.permissions, ...missing])],
+        });
+        console.log(`✅ employee role permissions updated (+${missing.length})`);
+      }
     }
 
     const existingAdmin = await UserModel.findOne({ email: env.ADMIN_EMAIL }).select('+password');

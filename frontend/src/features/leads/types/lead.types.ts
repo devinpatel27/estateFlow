@@ -95,6 +95,7 @@ export interface LeadListParams {
   sortOrder?: 'asc' | 'desc';
   dateFrom?: string;
   dateTo?: string;
+  followUpDue?: 'today' | 'tomorrow' | 'overdue';
 }
 
 export interface CreateLeadData {
@@ -124,6 +125,9 @@ export interface LeadStats {
   todayFollowUps: number;
   tomorrowFollowUps: number;
   overdueFollowUps: number;
+  todayVisits: number;
+  tomorrowVisits: number;
+  overdueVisits: number;
   closedWon: number;
   closedLost: number;
   isAdminView: boolean;

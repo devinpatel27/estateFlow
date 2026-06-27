@@ -1,5 +1,6 @@
 'use client';
 
+import 'react-datepicker/dist/react-datepicker.css';
 import { forwardRef, useState } from 'react';
 import ReactDatePicker from 'react-datepicker';
 import { format, parseISO, isValid } from 'date-fns';

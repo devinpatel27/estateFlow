@@ -68,6 +68,7 @@ export const listLeadsSchema = z.object({
     sortOrder: z.enum(['asc', 'desc']).optional(),
     dateFrom: z.string().optional(),
     dateTo: z.string().optional(),
+    followUpDue: z.enum(['today', 'tomorrow', 'overdue']).optional(),
   }),
 });
 

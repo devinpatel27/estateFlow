@@ -7,7 +7,7 @@ export const leadController = {
   list: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { page, limit, skip } = getPagination(req);
-      const { search, status, category, priority, propertyType, leadSource, assignedTo, sortBy, sortOrder, dateFrom, dateTo } =
+      const { search, status, category, priority, propertyType, leadSource, assignedTo, sortBy, sortOrder, dateFrom, dateTo, followUpDue } =
         req.query;
 
       const { data, total } = await leadService.list(req.user!, {
@@ -24,6 +24,7 @@ export const leadController = {
         sortOrder: sortOrder as 'asc' | 'desc',
         dateFrom: dateFrom as string,
         dateTo: dateTo as string,
+        followUpDue: followUpDue as 'today' | 'tomorrow' | 'overdue',
       });
 
       sendPaginated(res, 'Leads retrieved successfully', data, { page, limit, total });

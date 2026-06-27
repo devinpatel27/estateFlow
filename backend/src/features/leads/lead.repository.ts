@@ -1,5 +1,6 @@
 import { FilterQuery, Types } from 'mongoose';
 import { LeadModel, ILead } from '../../models/Lead.model';
+import { VisitModel, IVisit } from '../../models/Visit.model';
 import { LeadAssignmentModel } from '../../models/LeadAssignment.model';
 import { LeadFollowUpModel } from '../../models/LeadFollowUp.model';
 import { LeadActivityModel } from '../../models/LeadActivity.model';
@@ -24,10 +25,92 @@ export interface ListLeadOptions {
   assignedToUserId?: string;
   dateFrom?: string;
   dateTo?: string;
+  followUpDue?: 'today' | 'tomorrow' | 'overdue';
 }
 
 const populateFields =
   'customerName mobile alternateMobile email city address category propertyType leadSource budgetMin budgetMax preferredArea priority status initialRemark assignedTo currentAssignmentId assignedAt nextFollowUpDate leadId createdAt updatedAt notes';
+
+function getScheduleDateRanges(now = new Date()) {
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(now);
+  endOfDay.setHours(23, 59, 59, 999);
+  const tomorrowStart = new Date(startOfDay);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const tomorrowEnd = new Date(tomorrowStart);
+  tomorrowEnd.setHours(23, 59, 59, 999);
+  return { startOfDay, endOfDay, tomorrowStart, tomorrowEnd };
+}
+
+function buildFollowUpDueClause(type: 'today' | 'tomorrow' | 'overdue', now = new Date()): FilterQuery<ILead> {
+  const { startOfDay, endOfDay, tomorrowStart, tomorrowEnd } = getScheduleDateRanges(now);
+
+  if (type === 'today') {
+    return { nextFollowUpDate: { $gte: startOfDay, $lte: endOfDay } };
+  }
+  if (type === 'tomorrow') {
+    return { nextFollowUpDate: { $gte: tomorrowStart, $lte: tomorrowEnd } };
+  }
+  return {
+    nextFollowUpDate: { $lt: startOfDay },
+    status: { $in: ACTIVE_LEAD_STATUSES },
+  };
+}
+
+async function getLeadIdsWithScheduledVisitsDue(
+  type: 'today' | 'tomorrow' | 'overdue',
+  options: Pick<ListLeadOptions, 'assignedOnly' | 'assignedToUserId'>,
+  now = new Date()
+): Promise<Types.ObjectId[]> {
+  const { startOfDay, endOfDay, tomorrowStart, tomorrowEnd } = getScheduleDateRanges(now);
+  const visitQuery: FilterQuery<IVisit> = { status: 'scheduled' };
+
+  if (type === 'today') {
+    visitQuery.scheduledDate = { $gte: startOfDay, $lte: endOfDay };
+  } else if (type === 'tomorrow') {
+    visitQuery.scheduledDate = { $gte: tomorrowStart, $lte: tomorrowEnd };
+  } else {
+    visitQuery.scheduledDate = { $lt: startOfDay };
+  }
+
+  if (options.assignedOnly && options.assignedToUserId) {
+    const assignedTo = toObjectId(options.assignedToUserId);
+    if (!assignedTo) return [];
+    const assignedLeads = await LeadModel.find({ assignedTo, deletedAt: null }).select('_id').lean();
+    const leadIds = assignedLeads.map((lead) => lead._id as Types.ObjectId);
+    if (leadIds.length === 0) return [];
+    visitQuery.leadId = { $in: leadIds };
+  }
+
+  return VisitModel.distinct('leadId', visitQuery);
+}
+
+function applyScheduleDueFilter(
+  query: FilterQuery<ILead>,
+  scheduleConditions: FilterQuery<ILead>[]
+) {
+  if (scheduleConditions.length === 0) return;
+
+  const scheduleFilter =
+    scheduleConditions.length === 1
+      ? scheduleConditions[0]
+      : { $or: scheduleConditions };
+
+  if (query.$or) {
+    const searchFilter = { $or: query.$or };
+    delete query.$or;
+    query.$and = [...(Array.isArray(query.$and) ? query.$and : []), searchFilter, scheduleFilter];
+    return;
+  }
+
+  if (scheduleConditions.length === 1) {
+    Object.assign(query, scheduleConditions[0]);
+    return;
+  }
+
+  query.$or = scheduleConditions;
+}
 
 async function attachLastFollowUps<T extends Record<string, unknown>>(
   leads: T[],
@@ -145,7 +228,12 @@ export const leadRepository = {
 
     if (options.status) query.status = options.status;
     if (options.category) query.category = options.category;
-    if (options.priority) query.priority = options.priority;
+    if (options.priority) {
+      query.priority = options.priority;
+      if (!options.status) {
+        query.status = { $in: ACTIVE_LEAD_STATUSES };
+      }
+    }
     if (options.propertyType) {
       const propertyType = toObjectId(options.propertyType);
       if (propertyType) query.propertyType = propertyType;
@@ -153,6 +241,18 @@ export const leadRepository = {
     if (options.leadSource) {
       const leadSource = toObjectId(options.leadSource);
       if (leadSource) query.leadSource = leadSource;
+    }
+
+    if (options.followUpDue) {
+      const now = new Date();
+      const visitLeadIds = await getLeadIdsWithScheduledVisitsDue(options.followUpDue, options, now);
+      const scheduleConditions: FilterQuery<ILead>[] = [
+        buildFollowUpDueClause(options.followUpDue, now),
+      ];
+      if (visitLeadIds.length > 0) {
+        scheduleConditions.push({ _id: { $in: visitLeadIds } });
+      }
+      applyScheduleDueFilter(query, scheduleConditions);
     }
 
     const sortFieldMap: Record<string, string> = {

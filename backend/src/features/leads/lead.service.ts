@@ -14,6 +14,8 @@ import { generateLeadId } from '../../utils/leadId.utils';
 import { normalizeMobile, isValidMobile } from '../../utils/mobile.utils';
 import { isValidObjectId, resolveRefId, toObjectId } from '../../utils/objectId.utils';
 import { JwtPayload } from '../../types/api.types';
+import { VisitModel } from '../../models/Visit.model';
+import { LeadModel } from '../../models/Lead.model';
 import {
   ACTIVE_LEAD_STATUSES,
   CLOSED_LEAD_STATUSES,
@@ -539,8 +541,18 @@ export const leadService = {
 
   getLeadStats: async (user: JwtPayload) => {
     const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    const tomorrowStart = new Date(startOfDay);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    const tomorrowEnd = new Date(tomorrowStart);
+    tomorrowEnd.setHours(23, 59, 59, 999);
 
     const baseFilter: Record<string, unknown> = {};
+    let visitLeadFilter: Record<string, unknown> = { status: 'scheduled' };
+
     if (requiresAssignedOnlyScope(user.permissions)) {
       const assignedTo = toObjectId(user.userId);
       if (!assignedTo) {
@@ -553,12 +565,20 @@ export const leadService = {
           todayFollowUps: 0,
           tomorrowFollowUps: 0,
           overdueFollowUps: 0,
+          todayVisits: 0,
+          tomorrowVisits: 0,
+          overdueVisits: 0,
           closedWon: 0,
           closedLost: 0,
           isAdminView: false,
         };
       }
       baseFilter.assignedTo = assignedTo;
+      const leadIds = await LeadModel.find({ assignedTo, deletedAt: null }).select('_id').lean();
+      visitLeadFilter = {
+        status: 'scheduled',
+        leadId: { $in: leadIds.map((l) => l._id) },
+      };
     }
 
     const [
@@ -570,17 +590,44 @@ export const leadService = {
       todayFollowUps,
       tomorrowFollowUps,
       overdueFollowUps,
+      todayVisits,
+      tomorrowVisits,
+      overdueVisits,
       closedWon,
       closedLost,
     ] = await Promise.all([
       leadRepository.countByFilter(baseFilter),
       leadRepository.countByFilter({ ...baseFilter, status: 'new' }),
-      leadRepository.countByFilter({ ...baseFilter, priority: 'hot' }),
-      leadRepository.countByFilter({ ...baseFilter, priority: 'warm' }),
-      leadRepository.countByFilter({ ...baseFilter, priority: 'cold' }),
+      leadRepository.countByFilter({
+        ...baseFilter,
+        priority: 'hot',
+        status: { $in: ACTIVE_LEAD_STATUSES },
+      }),
+      leadRepository.countByFilter({
+        ...baseFilter,
+        priority: 'warm',
+        status: { $in: ACTIVE_LEAD_STATUSES },
+      }),
+      leadRepository.countByFilter({
+        ...baseFilter,
+        priority: 'cold',
+        status: { $in: ACTIVE_LEAD_STATUSES },
+      }),
       leadRepository.countFollowUpsDue(baseFilter, now, 'today'),
       leadRepository.countFollowUpsDue(baseFilter, now, 'tomorrow'),
       leadRepository.countFollowUpsDue(baseFilter, now, 'overdue'),
+      VisitModel.countDocuments({
+        ...visitLeadFilter,
+        scheduledDate: { $gte: startOfDay, $lte: endOfDay },
+      }),
+      VisitModel.countDocuments({
+        ...visitLeadFilter,
+        scheduledDate: { $gte: tomorrowStart, $lte: tomorrowEnd },
+      }),
+      VisitModel.countDocuments({
+        ...visitLeadFilter,
+        scheduledDate: { $lt: startOfDay },
+      }),
       leadRepository.countByFilter({ ...baseFilter, status: 'closed_won' }),
       leadRepository.countByFilter({ ...baseFilter, status: 'closed_lost' }),
     ]);
@@ -594,6 +641,9 @@ export const leadService = {
       todayFollowUps,
       tomorrowFollowUps,
       overdueFollowUps,
+      todayVisits,
+      tomorrowVisits,
+      overdueVisits,
       closedWon,
       closedLost,
       isAdminView: canReadAllLeads(user.permissions),

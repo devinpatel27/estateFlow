@@ -1,13 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import dynamic from 'next/dynamic';
+import { Suspense, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/common/PageHeader';
-import { LeadTable } from '@/features/leads/components/LeadTable';
-import { AddLeadDialog } from '@/features/leads/components/AddLeadDialog';
+import { TablePageSkeleton } from '@/components/common/PageSkeletons';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/constants';
+
+const LeadTable = dynamic(
+  () => import('@/features/leads/components/LeadTable').then((m) => ({ default: m.LeadTable })),
+  { loading: () => <TablePageSkeleton /> }
+);
+
+const AddLeadDialog = dynamic(
+  () => import('@/features/leads/components/AddLeadDialog').then((m) => ({ default: m.AddLeadDialog })),
+  { ssr: false }
+);
 
 export default function LeadsPage() {
   const { hasPermission, canViewAllLeads, isReady } = usePermissions();
@@ -35,10 +45,12 @@ export default function LeadsPage() {
           </Button>
         )}
       </PageHeader>
-      <LeadTable
-        key={refreshKey}
-        onCreateLead={canCreate ? () => setCreateOpen(true) : undefined}
-      />
+      <Suspense fallback={<TablePageSkeleton />}>
+        <LeadTable
+          key={refreshKey}
+          onCreateLead={canCreate ? () => setCreateOpen(true) : undefined}
+        />
+      </Suspense>
       <AddLeadDialog
         open={createOpen}
         onOpenChange={setCreateOpen}

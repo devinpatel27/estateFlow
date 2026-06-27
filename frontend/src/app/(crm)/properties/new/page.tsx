@@ -1,9 +1,15 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { PermissionGuard } from '@/components/common/PermissionGuard';
 import { PageHeader } from '@/components/common/PageHeader';
-import { PropertyForm } from '@/features/properties/components/PropertyForm';
+import { TablePageSkeleton } from '@/components/common/PageSkeletons';
 import { PERMISSIONS } from '@/lib/constants';
+
+const PropertyForm = dynamic(
+  () => import('@/features/properties/components/PropertyForm').then((m) => ({ default: m.PropertyForm })),
+  { ssr: false, loading: () => <TablePageSkeleton /> }
+);
 
 export default function NewPropertyPage() {
   return (

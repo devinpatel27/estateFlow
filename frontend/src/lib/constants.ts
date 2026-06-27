@@ -35,6 +35,8 @@ export const PERMISSIONS = {
   PROPERTY_PUBLISH: 'property:publish',
   PROPERTY_MASTER_MANAGE: 'property:master:manage',
   SETTINGS_MANAGE: 'settings:manage',
+  REPORT_READ: 'report:read',
+  REPORT_EXPORT: 'report:export',
   WILDCARD: '*',
 } as const;
 
@@ -75,6 +77,8 @@ export const ALL_PERMISSIONS = [
   { key: PERMISSIONS.PROPERTY_PUBLISH, label: 'Publish & Feature Properties', group: 'Property Management' },
   { key: PERMISSIONS.PROPERTY_MASTER_MANAGE, label: 'Manage Property Amenities', group: 'Property Management' },
   { key: PERMISSIONS.SETTINGS_MANAGE, label: 'Manage System Settings', group: 'Settings' },
+  { key: PERMISSIONS.REPORT_READ, label: 'View Reports', group: 'Reports & Analytics' },
+  { key: PERMISSIONS.REPORT_EXPORT, label: 'Export Reports', group: 'Reports & Analytics' },
 ];
 
 export const ROUTES = {
@@ -100,6 +104,11 @@ export const ROUTES = {
   PROPERTY_DETAIL: (id: string) => `/properties/${id}`,
   PROPERTY_AMENITIES: '/settings/property-amenities',
   LEAD_ASSIGNMENT: '/settings/lead-assignment',
+  REPORTS_OVERVIEW: '/reports/overview',
+  REPORTS_LEADS: '/reports/leads',
+  REPORTS_EMPLOYEES: '/reports/employees',
+  REPORTS_PROPERTIES: '/reports/properties',
+  REPORTS_VISITS: '/reports/visits',
 } as const;
 
 export const PROPERTY_PURPOSES = [

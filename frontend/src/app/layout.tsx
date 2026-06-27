@@ -4,8 +4,8 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import { StoreProvider } from '@/components/providers/StoreProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
+import { UserThemeSync } from '@/components/providers/UserThemeSync';
 import './globals.css';
-import 'react-datepicker/dist/react-datepicker.css';
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -27,8 +27,9 @@ export default function RootLayout({
       <body className={`${plusJakarta.variable} font-sans antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
+          storageKey="crm-theme-active"
           disableTransitionOnChange
         >
           <StoreProvider>
@@ -36,6 +37,7 @@ export default function RootLayout({
               {children}
             </QueryProvider>
           </StoreProvider>
+          <UserThemeSync />
           <div id="crm-datepicker-root" />
           <Toaster
             position="top-right"

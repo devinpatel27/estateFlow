@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Users,
@@ -12,11 +13,13 @@ import {
   Radio,
   MapPin,
   ChevronDown,
+  BarChart3,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/constants';
+import { prefetchRouteData } from '@/lib/route-prefetch';
 
 interface NavItem {
   label: string;
@@ -70,6 +73,41 @@ const navGroups: NavGroup[] = [
         href: '/visits',
         icon: MapPin,
         anyPermission: [PERMISSIONS.VISIT_READ, PERMISSIONS.VISIT_READ_ASSIGNED],
+      },
+    ],
+  },
+  {
+    title: 'Reports & Analytics',
+    items: [
+      {
+        label: 'Overview Analytics',
+        href: '/reports/overview',
+        icon: BarChart3,
+        permission: PERMISSIONS.REPORT_READ,
+      },
+      {
+        label: 'Lead Reports',
+        href: '/reports/leads',
+        icon: Target,
+        permission: PERMISSIONS.REPORT_READ,
+      },
+      {
+        label: 'Employee Performance',
+        href: '/reports/employees',
+        icon: Users,
+        permission: PERMISSIONS.REPORT_READ,
+      },
+      {
+        label: 'Property Reports',
+        href: '/reports/properties',
+        icon: Building2,
+        permission: PERMISSIONS.REPORT_READ,
+      },
+      {
+        label: 'Visit Reports',
+        href: '/reports/visits',
+        icon: MapPin,
+        permission: PERMISSIONS.REPORT_READ,
       },
     ],
   },
@@ -143,16 +181,21 @@ function NavLink({
   active,
   collapsed,
   onNavClick,
+  onPrefetch,
 }: {
   item: NavItem;
   active: boolean;
   collapsed?: boolean;
   onNavClick?: () => void;
+  onPrefetch?: (href: string) => void;
 }) {
   return (
     <Link
       href={item.href}
+      prefetch
       onClick={onNavClick}
+      onMouseEnter={() => onPrefetch?.(item.href)}
+      onFocus={() => onPrefetch?.(item.href)}
       className={cn(
         'crm-sidebar-nav-item relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium',
         active ? 'crm-sidebar-nav-active' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground',
@@ -177,8 +220,21 @@ function NavLink({
 
 export function SidebarNav({ collapsed, onNavClick }: SidebarNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const { hasPermission, isReady } = usePermissions();
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({});
+  const prefetched = useRef(new Set<string>());
+
+  const prefetchRoute = useCallback(
+    (href: string) => {
+      if (prefetched.current.has(href)) return;
+      prefetched.current.add(href);
+      router.prefetch(href);
+      prefetchRouteData(queryClient, href);
+    },
+    [router, queryClient]
+  );
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard';
@@ -232,6 +288,7 @@ export function SidebarNav({ collapsed, onNavClick }: SidebarNavProps) {
                     active={isActive(item.href)}
                     collapsed={collapsed}
                     onNavClick={onNavClick}
+                    onPrefetch={prefetchRoute}
                   />
                 </li>
               ))}
@@ -257,6 +314,7 @@ export function SidebarNav({ collapsed, onNavClick }: SidebarNavProps) {
                     active={isActive(item.href)}
                     collapsed={collapsed}
                     onNavClick={onNavClick}
+                    onPrefetch={prefetchRoute}
                   />
                 ));
               }
@@ -301,6 +359,7 @@ export function SidebarNav({ collapsed, onNavClick }: SidebarNavProps) {
                               active={isActive(item.href)}
                               collapsed={collapsed}
                               onNavClick={onNavClick}
+                              onPrefetch={prefetchRoute}
                             />
                           </li>
                         ))}

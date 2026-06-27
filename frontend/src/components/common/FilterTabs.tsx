@@ -28,7 +28,7 @@ export function FilterTabs<T extends string>({
       role="tablist"
       aria-label={ariaLabel}
       className={cn(
-        'crm-filter-tabs inline-flex shrink-0 items-center rounded-lg border border-input bg-background p-0.5 shadow-sm',
+        'crm-filter-tabs inline-flex h-9 min-h-9 shrink-0 items-center rounded-lg border border-input bg-background p-0.5 shadow-sm',
         className
       )}
     >
@@ -42,7 +42,7 @@ export function FilterTabs<T extends string>({
             aria-selected={active}
             onClick={() => onChange(option.value)}
             className={cn(
-              'inline-flex h-full items-center gap-1 rounded-md px-2.5 text-xs font-medium whitespace-nowrap transition-colors',
+              'inline-flex h-[calc(2.25rem-0.25rem)] items-center justify-center gap-1.5 rounded-md px-3 text-xs font-semibold whitespace-nowrap transition-all duration-150',
               active
                 ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'

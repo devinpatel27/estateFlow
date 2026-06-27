@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ShieldOff } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { EmptyState } from '@/components/common/EmptyState';
+import { TablePageSkeleton } from '@/components/common/PageSkeletons';
 
 interface PermissionGuardProps {
   children: React.ReactNode;
@@ -39,11 +40,7 @@ export function PermissionGuard({
   }, [isReady, allowed, redirectTo, router]);
 
   if (!isReady) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
-        Checking permissions...
-      </div>
-    );
+    return <TablePageSkeleton />;
   }
 
   if (!allowed) {
