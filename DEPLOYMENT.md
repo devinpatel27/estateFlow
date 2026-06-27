@@ -1,14 +1,15 @@
-# CRM Deployment Guide (Vercel + Render, Single Repo)
+# CRM Deployment Guide (Vercel + Render)
 
-You **do not need separate repos**. One Git repo with `crm/frontend` and `crm/backend` works. Each platform deploys a different subfolder.
+Git repo root is this folder (`realview-realty-crm`):
 
 ```
-realview_realty/          ← Git root (one repo)
-└── crm/
-    ├── frontend/         → Deploy to Vercel
-    ├── backend/          → Deploy to Render
-    └── render.yaml       → At repo root (Render blueprint)
+realview-realty-crm/     ← GitHub repo root
+├── backend/             → Render (Root Directory: backend)
+├── frontend/            → Vercel (Root Directory: frontend)
+└── render.yaml          → Render blueprint (optional)
 ```
+
+**Do NOT use `crm/backend` or `crm/frontend`** — those paths are wrong for this repo.
 
 ---
 
@@ -49,7 +50,7 @@ Auth uses a **cookie on the Vercel domain** + **Bearer token** in API calls. Fro
 
 | Setting | Value |
 |---------|-------|
-| Root Directory | `crm/backend` |
+| Root Directory | **`backend`** (not `crm/backend`) |
 | Runtime | Node |
 | Build Command | `npm install && npm run build` |
 | Start Command | `npm start` |
@@ -72,24 +73,35 @@ UPLOAD_DIR=./uploads
 
 **Uploads note:** Render free tier has **ephemeral disk** — uploaded files are lost on redeploy. For client testing, this may be OK. For production, add Render persistent disk or S3/Cloudinary later.
 
-After deploy, note your API URL: `https://realview-crm-api.onrender.com`
+After deploy, API URL: `https://realview-realty-crm.onrender.com`
+
+Set on Render:
+```env
+FRONTEND_URL=https://YOUR-VERCEL-APP.vercel.app
+```
+(No trailing slash — must match your Vercel URL exactly for CORS.)
 
 ---
 
 ## 3. Vercel (Frontend)
 
-1. Vercel Dashboard → **Add New Project** → import same GitHub repo
-2. **Root Directory:** `crm/frontend` (important)
+1. Vercel Dashboard → **Add New Project** → import `realview-realty-crm` repo
+2. **Root Directory:** **`frontend`** (not `crm/frontend`)
 3. Framework: Next.js (auto-detected)
 
-**Environment variables:**
+**Environment variables** (Production):
 
 ```env
-NEXT_PUBLIC_API_URL=https://realview-crm-api.onrender.com/api
-NEXT_PUBLIC_UPLOADS_URL=https://realview-crm-api.onrender.com
+NEXT_PUBLIC_API_URL=https://realview-realty-crm.onrender.com/api
+NEXT_PUBLIC_UPLOADS_URL=https://realview-realty-crm.onrender.com
+NEXT_PUBLIC_UPLOADS_HOST=realview-realty-crm.onrender.com
 ```
 
+See also `frontend/.env.production.example`.
+
 4. Deploy
+
+**Note:** `frontend/vercel.json` must be valid JSON only (no comments). Vercel auto-detects Next.js; the file is optional.
 
 ### Production images
 
