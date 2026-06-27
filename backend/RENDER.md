@@ -1,4 +1,6 @@
-# Render deploy settings (Root Directory = backend)
+# Render deploy settings
+
+## Dashboard settings (Root Directory = `backend`)
 
 | Setting | Value |
 |---------|-------|
@@ -6,12 +8,32 @@
 | Build Command | `npm install --include=dev && npm run build` |
 | Start Command | `npm start` |
 
-**Fallback:** If build still fails, set Start Command to:
+**Note:** The `backend/ $` prefix in Render's UI is only a path hint — do **not** type it into the command field. Enter only the command itself.
+
+---
+
+## If deploy still fails
+
+Set **Start Command** to:
+
 ```
 npm run render:start
 ```
-(This builds then starts in one step.)
 
-Do **not** use `yarn` or `npm run dev`.
+This installs dependencies, builds TypeScript, then starts the server.
 
-After deploy, check: `https://realview-realty-crm.onrender.com/health`
+---
+
+## Verify
+
+After deploy, open: `https://realview-realty-crm.onrender.com/health`
+
+Expected: `{"status":"ok","timestamp":"..."}`
+
+## Required env vars on Render
+
+- `MONGODB_URI`
+- `JWT_SECRET` (32+ characters)
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
+- `FRONTEND_URL` (your Vercel URL, no trailing slash)
