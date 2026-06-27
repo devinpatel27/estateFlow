@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "description": "Enterprise Real Estate CRM - Backend API",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only --exit-child src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "render:build": "npm install --include=dev && npm run build",
     "seed": "ts-node src/scripts/seedAdmin.ts"
   },
   "dependencies": {

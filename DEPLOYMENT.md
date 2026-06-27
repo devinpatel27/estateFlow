@@ -52,9 +52,11 @@ Auth uses a **cookie on the Vercel domain** + **Bearer token** in API calls. Fro
 |---------|-------|
 | Root Directory | **`backend`** (not `crm/backend`) |
 | Runtime | Node |
-| Build Command | `npm install && npm run build` |
-| Start Command | `npm start` |
+| Build Command | `npm run render:build` |
+| Start Command | **`npm start`** (NOT `npm run dev`) |
 | Health Check | `/health` |
+
+> **Important:** `npm run dev` uses `ts-node-dev` (dev-only). Production must use **`npm start`** which runs `node dist/server.js` after the TypeScript build.
 
 **Environment variables** (see `crm/backend/.env.example`):
 
