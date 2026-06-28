@@ -5,7 +5,7 @@
 | Setting | Value |
 |---------|-------|
 | Root Directory | `backend` |
-| Build Command | `npm ci --include=dev && npm run build` |
+| Build Command | `npm ci --include=dev --include=optional && npm run build` |
 | Start Command | `npm start` |
 
 **Do not use `yarn`.** The `$` prefix in Render UI is a path hint only — do not type it.
