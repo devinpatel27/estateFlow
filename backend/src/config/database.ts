@@ -1,5 +1,12 @@
+import dns from 'dns';
 import mongoose from 'mongoose';
 import { env } from './env';
+
+// Some local network setups (notably certain Windows configurations with
+// IPv6-only DNS resolvers) fail Node's SRV lookups against MongoDB Atlas
+// even though the OS resolver works fine. Prefer public resolvers as a
+// fallback to avoid spurious connection failures.
+dns.setServers([...dns.getServers(), '8.8.8.8', '1.1.1.1']);
 
 const MAX_RETRIES = 5;
 const RETRY_INTERVAL = 5000;
