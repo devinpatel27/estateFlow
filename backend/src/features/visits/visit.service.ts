@@ -136,18 +136,36 @@ export const visitService = {
       throw new AppError('Insufficient permissions', 403);
     }
 
-    await assertCanAccessVisit(user, id);
+    const visit = await assertCanAccessVisit(user, id);
     const isFavorite = await visitRepository.toggleFavorite(id, user.userId);
+    await visitRepository.addHistory({
+      visitId: new Types.ObjectId(id),
+      action: 'note',
+      remark: isFavorite ? 'Marked as favorite' : 'Removed from favorites',
+      performedBy: new Types.ObjectId(user.userId),
+    });
+    await logActivity({
+      userId: user.userId,
+      action: 'TOGGLE_VISIT_FAVORITE',
+      module: 'VISIT',
+      description: `${isFavorite ? 'Favorited' : 'Unfavorited'} visit ${id} for lead ${(visit.lead as { leadId?: string })?.leadId || ''}`,
+    });
     return visitRepository.findById(id, user.userId);
   },
 
   addHistory: async (id: string, data: AddVisitHistoryInput, user: JwtPayload) => {
-    await assertCanAccessVisit(user, id);
+    const visit = await assertCanAccessVisit(user, id);
     await visitRepository.addHistory({
       visitId: new Types.ObjectId(id),
       action: data.action as import('../../constants/visit.constants').VisitHistoryAction,
       remark: data.remark,
       performedBy: new Types.ObjectId(user.userId),
+    });
+    await logActivity({
+      userId: user.userId,
+      action: 'ADD_VISIT_HISTORY',
+      module: 'VISIT',
+      description: `Added visit log for lead ${(visit.lead as { leadId?: string })?.leadId || id}`,
     });
     return visitRepository.getHistory(id);
   },
@@ -183,6 +201,13 @@ export const visitService = {
       remark: params.remark || 'Created from lead follow-up',
       performedBy: new Types.ObjectId(params.userId),
       metadata: { followUpId: params.followUpId.toString(), source: 'follow_up' },
+    });
+
+    await logActivity({
+      userId: params.userId,
+      action: 'CREATE_VISIT_FROM_FOLLOWUP',
+      module: 'VISIT',
+      description: `Created ${params.type} visit from lead follow-up`,
     });
 
     return visit;

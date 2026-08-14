@@ -27,6 +27,7 @@ interface SearchableSelectProps {
   searchPlaceholder?: string;
   disabled?: boolean;
   emptyText?: string;
+  allowCustomValue?: boolean;
   className?: string;
 }
 
@@ -38,10 +39,16 @@ export function SearchableSelect({
   searchPlaceholder = 'Search...',
   disabled,
   emptyText = 'No results found.',
+  allowCustomValue,
   className,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const selected = options.find((option) => option.value === value);
+  const showCustomOption =
+    allowCustomValue &&
+    search.trim().length > 0 &&
+    !options.some((option) => option.label.toLowerCase() === search.trim().toLowerCase());
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -64,16 +71,30 @@ export function SearchableSelect({
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
+              {showCustomOption && (
+                <CommandItem
+                  value={search}
+                  onSelect={() => {
+                    onValueChange(search.trim());
+                    setSearch('');
+                    setOpen(false);
+                  }}
+                >
+                  <Check className="mr-2 h-4 w-4 opacity-0" />
+                  Add "{search.trim()}"
+                </CommandItem>
+              )}
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.label}
                   onSelect={() => {
                     onValueChange(option.value);
+                    setSearch('');
                     setOpen(false);
                   }}
                 >

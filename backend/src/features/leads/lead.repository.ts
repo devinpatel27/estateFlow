@@ -4,7 +4,10 @@ import { VisitModel, IVisit } from '../../models/Visit.model';
 import { LeadAssignmentModel } from '../../models/LeadAssignment.model';
 import { LeadFollowUpModel } from '../../models/LeadFollowUp.model';
 import { LeadActivityModel } from '../../models/LeadActivity.model';
+import { PropertyTypeModel } from '../../models/PropertyType.model';
+import { UserModel } from '../../models/User.model';
 import { ACTIVE_LEAD_STATUSES } from '../../constants/lead.constants';
+import { LEAD_STATUS_BUCKETS } from '../../constants/lead.constants';
 import { normalizeMobile } from '../../utils/mobile.utils';
 import { enrichLeadDetail, enrichLeads } from '../../utils/leadPopulate.utils';
 import { isValidObjectId, toObjectId } from '../../utils/objectId.utils';
@@ -17,6 +20,7 @@ export interface ListLeadOptions {
   category?: string;
   priority?: string;
   propertyType?: string;
+  propertyConfiguration?: string;
   leadSource?: string;
   assignedTo?: string;
   sortBy?: string;
@@ -25,11 +29,13 @@ export interface ListLeadOptions {
   assignedToUserId?: string;
   dateFrom?: string;
   dateTo?: string;
+  nfdFrom?: string;
+  nfdTo?: string;
   followUpDue?: 'today' | 'tomorrow' | 'overdue';
 }
 
 const populateFields =
-  'customerName mobile alternateMobile email city address category propertyType leadSource budgetMin budgetMax preferredArea priority status initialRemark assignedTo currentAssignmentId assignedAt nextFollowUpDate leadId createdAt updatedAt notes';
+  'customerName mobile alternateMobile email city address category propertyType propertyConfiguration leadSource budgetMin budgetMax preferredArea priority status initialRemark assignedTo currentAssignmentId assignedAt nextFollowUpDate leadId createdAt updatedAt notes';
 
 function getScheduleDateRanges(now = new Date()) {
   const startOfDay = new Date(now);
@@ -203,16 +209,44 @@ export const leadRepository = {
 
     if (options.search) {
       const searchRegex = { $regex: options.search, $options: 'i' };
+      const [matchingUsers, matchingPropertyTypes, matchingFollowUpLeadIds] = await Promise.all([
+        UserModel.find({
+          $or: [
+            { name: searchRegex },
+            { employeeId: searchRegex },
+            { email: searchRegex },
+            { mobile: searchRegex },
+          ],
+        }).select('_id').lean(),
+        PropertyTypeModel.find({
+          $or: [
+            { name: searchRegex },
+            { slug: searchRegex },
+          ],
+        }).select('_id').lean(),
+        LeadFollowUpModel.distinct('leadId', {
+          $or: [
+            { remark: searchRegex },
+            { type: searchRegex },
+          ],
+        }),
+      ]);
+      const assignedToIds = matchingUsers.map((user) => user._id);
+      const propertyTypeIds = matchingPropertyTypes.map((type) => type._id);
       query.$or = [
         { customerName: searchRegex },
         { mobile: searchRegex },
         { alternateMobile: searchRegex },
         { email: searchRegex },
         { leadId: searchRegex },
+        { propertyConfiguration: searchRegex },
         { preferredArea: searchRegex },
         { city: searchRegex },
         { address: searchRegex },
         { initialRemark: searchRegex },
+        ...(assignedToIds.length ? [{ assignedTo: { $in: assignedToIds } }] : []),
+        ...(propertyTypeIds.length ? [{ propertyType: { $in: propertyTypeIds } }] : []),
+        ...(matchingFollowUpLeadIds.length ? [{ _id: { $in: matchingFollowUpLeadIds } }] : []),
       ];
     }
 
@@ -226,7 +260,20 @@ export const leadRepository = {
       }
     }
 
-    if (options.status) query.status = options.status;
+    if (options.nfdFrom || options.nfdTo) {
+      query.nextFollowUpDate = {};
+      if (options.nfdFrom) {
+        (query.nextFollowUpDate as Record<string, Date>).$gte = new Date(`${options.nfdFrom}T00:00:00.000Z`);
+      }
+      if (options.nfdTo) {
+        (query.nextFollowUpDate as Record<string, Date>).$lte = new Date(`${options.nfdTo}T23:59:59.999Z`);
+      }
+    }
+
+    if (options.status) {
+      const bucket = LEAD_STATUS_BUCKETS[options.status as keyof typeof LEAD_STATUS_BUCKETS];
+      query.status = bucket ? { $in: bucket } : options.status;
+    }
     if (options.category) query.category = options.category;
     if (options.priority) {
       query.priority = options.priority;
@@ -237,6 +284,9 @@ export const leadRepository = {
     if (options.propertyType) {
       const propertyType = toObjectId(options.propertyType);
       if (propertyType) query.propertyType = propertyType;
+    }
+    if (options.propertyConfiguration) {
+      query.propertyConfiguration = { $regex: options.propertyConfiguration, $options: 'i' };
     }
     if (options.leadSource) {
       const leadSource = toObjectId(options.leadSource);
@@ -322,6 +372,27 @@ export const leadRepository = {
     return leadRepository.findById(id);
   },
 
+  /** Sync denormalized Lead.nextFollowUpDate to the latest follow-up NFD (or clear it). */
+  syncNextFollowUpDate: async (
+    id: string,
+    updatedBy: Types.ObjectId,
+    nextFollowUpDate?: Date
+  ): Promise<void> => {
+    if (!isValidObjectId(id)) return;
+
+    if (nextFollowUpDate) {
+      await LeadModel.findByIdAndUpdate(id, {
+        $set: { updatedBy, nextFollowUpDate },
+      });
+      return;
+    }
+
+    await LeadModel.findByIdAndUpdate(id, {
+      $set: { updatedBy },
+      $unset: { nextFollowUpDate: 1 },
+    });
+  },
+
   softDelete: async (id: string): Promise<ILead | null> => {
     return LeadModel.findByIdAndUpdate(id, { deletedAt: new Date() }, { new: true });
   },
@@ -388,7 +459,12 @@ export const leadRepository = {
     const query: FilterQuery<typeof LeadActivityModel> = { leadId };
     if (assignmentId) {
       const id = toObjectId(assignmentId);
-      if (id) query.assignmentId = id;
+      if (id) {
+        query.$or = [
+          { assignmentId: id },
+          { type: 'LEAD_CREATED' },
+        ];
+      }
     } else if (options?.strict) {
       return [];
     }

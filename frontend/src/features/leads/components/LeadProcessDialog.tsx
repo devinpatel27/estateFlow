@@ -35,7 +35,7 @@ interface LeadProcessDialogProps {
 
 type ProcessRow = {
   id: string;
-  kind: 'activity' | 'followup';
+  kind: 'activity' | 'followup' | 'initial';
   date: string;
   type: string;
   remark?: string;
@@ -78,7 +78,20 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
   }, [open, lead?._id]);
 
   const rows = useMemo(() => {
+    if (!lead) return [];
+    const hasLeadCreatedActivity = activities.some((activity) => activity.type === 'LEAD_CREATED');
     const items: ProcessRow[] = [
+      ...(lead.initialRemark && !hasLeadCreatedActivity
+        ? [{
+            id: `${lead._id}-initial-remark`,
+            kind: 'initial' as const,
+            date: lead.createdAt,
+            type: 'Lead Created',
+            remark: lead.initialRemark,
+            nextFollowUp: lead.nextFollowUpDate,
+            by: lead.createdBy?.name,
+          }]
+        : []),
       ...activities.map((a) => ({
         id: a._id,
         kind: 'activity' as const,
@@ -107,7 +120,7 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
       const matchesDate = !filterDate || item.date.startsWith(filterDate);
       return matchesSearch && matchesDate;
     });
-  }, [activities, followUps, search, filterDate]);
+  }, [activities, followUps, search, filterDate, lead]);
 
   const handleFollowUp = async (data: FollowUpFormValues) => {
     if (!lead) return;
@@ -228,7 +241,7 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
                             variant={row.kind === 'followup' ? 'default' : 'secondary'}
                             className="text-[10px] capitalize"
                           >
-                            {row.kind === 'followup' ? row.type : 'Activity'}
+                            {row.kind === 'followup' ? row.type : row.kind === 'initial' ? 'Initial' : 'Activity'}
                           </Badge>
                           {row.kind === 'activity' && (
                             <span className="max-w-[120px] truncate text-xs">{row.type}</span>

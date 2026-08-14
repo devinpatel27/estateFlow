@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/common/EmptyState';
 import { LeadListToolbar } from './LeadListToolbar';
+import { LeadProcessDialog } from './LeadProcessDialog';
 import { useLeadList } from '../hooks/useLeads';
 import { getLeadColumns } from './columns';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -20,11 +21,13 @@ interface LeadTableProps {
   onCreateLead?: () => void;
 }
 
-function buildLeadQueryString(params: Pick<LeadListParams, 'followUpDue' | 'status' | 'priority'>) {
+function buildLeadQueryString(params: Pick<LeadListParams, 'followUpDue' | 'status' | 'priority' | 'nfdFrom' | 'nfdTo'>) {
   const q = new URLSearchParams();
   if (params.followUpDue) q.set('followUpDue', params.followUpDue);
   if (params.status) q.set('status', params.status);
   if (params.priority) q.set('priority', params.priority);
+  if (params.nfdFrom) q.set('nfdFrom', params.nfdFrom);
+  if (params.nfdTo) q.set('nfdTo', params.nfdTo);
   return q.toString();
 }
 
@@ -36,16 +39,22 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
   const initialFollowUpDue = searchParams.get('followUpDue') as 'today' | 'tomorrow' | 'overdue' | null;
   const initialStatus = searchParams.get('status') || undefined;
   const initialPriority = searchParams.get('priority') || undefined;
+  const initialNfdFrom = searchParams.get('nfdFrom') || undefined;
+  const initialNfdTo = searchParams.get('nfdTo') || undefined;
   const { leads, totalCount, pageCount, isLoading, params, updateParams, refetch } = useLeadList({
     followUpDue: initialFollowUpDue || undefined,
     status: initialStatus,
     priority: initialPriority,
+    nfdFrom: initialNfdFrom,
+    nfdTo: initialNfdTo,
   });
   const [searchInput, setSearchInput] = useState(params.search || '');
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [processOpen, setProcessOpen] = useState(false);
   const debouncedSearch = useDebounce(searchInput, 300);
 
   const syncUrl = useCallback(
-    (next: Pick<LeadListParams, 'followUpDue' | 'status' | 'priority'>) => {
+    (next: Pick<LeadListParams, 'followUpDue' | 'status' | 'priority' | 'nfdFrom' | 'nfdTo'>) => {
       const qs = buildLeadQueryString(next);
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
@@ -59,27 +68,35 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
         followUpDue: updates.followUpDue !== undefined ? updates.followUpDue : params.followUpDue,
         status: updates.status !== undefined ? updates.status : params.status,
         priority: updates.priority !== undefined ? updates.priority : params.priority,
+        nfdFrom: updates.nfdFrom !== undefined ? updates.nfdFrom : params.nfdFrom,
+        nfdTo: updates.nfdTo !== undefined ? updates.nfdTo : params.nfdTo,
       };
       if (
         updates.followUpDue !== undefined ||
         updates.status !== undefined ||
-        updates.priority !== undefined
+        updates.priority !== undefined ||
+        updates.nfdFrom !== undefined ||
+        updates.nfdTo !== undefined
       ) {
         syncUrl(next);
       }
     },
-    [updateParams, params.followUpDue, params.status, params.priority, syncUrl]
+    [updateParams, params.followUpDue, params.status, params.priority, params.nfdFrom, params.nfdTo, syncUrl]
   );
 
   useEffect(() => {
     const followUpDue = searchParams.get('followUpDue') as 'today' | 'tomorrow' | 'overdue' | null;
     const status = searchParams.get('status') || undefined;
     const priority = searchParams.get('priority') || undefined;
+    const nfdFrom = searchParams.get('nfdFrom') || undefined;
+    const nfdTo = searchParams.get('nfdTo') || undefined;
 
     updateParams({
       followUpDue: followUpDue || undefined,
       status,
       priority,
+      nfdFrom,
+      nfdTo,
       page: 1,
     });
   }, [searchParams, updateParams]);
@@ -118,8 +135,11 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
       status: undefined,
       priority: undefined,
       category: undefined,
+      propertyConfiguration: undefined,
       dateFrom: undefined,
       dateTo: undefined,
+      nfdFrom: undefined,
+      nfdTo: undefined,
       page: 1,
     });
     router.replace(pathname, { scroll: false });
@@ -130,8 +150,11 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
     params.status ||
     params.priority ||
     params.category ||
+    params.propertyConfiguration ||
     params.dateFrom ||
-    params.dateTo
+    params.dateTo ||
+    params.nfdFrom ||
+    params.nfdTo
   );
 
   const columns = getLeadColumns({
@@ -177,6 +200,11 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
               Category: {formatLeadCategoryShort(params.category)}
             </Badge>
           )}
+          {params.propertyConfiguration && (
+            <Badge variant="secondary" className="gap-1">
+              Property: {params.propertyConfiguration}
+            </Badge>
+          )}
           {params.followUpDue && (
             <Badge variant="secondary" className="gap-1 capitalize">
               Schedule: {params.followUpDue === 'overdue' ? 'Due' : params.followUpDue}
@@ -185,6 +213,11 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
           {(params.dateFrom || params.dateTo) && (
             <Badge variant="secondary" className="gap-1">
               Created: {params.dateFrom ? formatDate(params.dateFrom) : '…'} → {params.dateTo ? formatDate(params.dateTo) : '…'}
+            </Badge>
+          )}
+          {(params.nfdFrom || params.nfdTo) && (
+            <Badge variant="secondary" className="gap-1">
+              NFD: {params.nfdFrom ? formatDate(params.nfdFrom) : '...'} - {params.nfdTo ? formatDate(params.nfdTo) : '...'}
             </Badge>
           )}
           <Badge variant="outline" className="tabular-nums">
@@ -213,6 +246,10 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
         onPageChange={(p) => updateParams({ page: p + 1 })}
         onPageSizeChange={(s) => updateParams({ limit: s, page: 1 })}
         onSortChange={(sortBy, sortOrder) => updateParams({ sortBy, sortOrder, page: 1 })}
+        onRowClick={(lead) => {
+          setSelectedLead(lead);
+          setProcessOpen(true);
+        }}
         isLoading={isLoading}
         toolbar={toolbar}
         toolbarActions={toolbarActions}
@@ -238,6 +275,12 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
             )}
           </EmptyState>
         }
+      />
+      <LeadProcessDialog
+        lead={selectedLead}
+        open={processOpen}
+        onOpenChange={setProcessOpen}
+        onRefresh={refetch}
       />
     </div>
   );

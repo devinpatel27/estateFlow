@@ -7,7 +7,7 @@ import { ModalShell } from '@/components/common/ModalShell';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/common/DatePicker';
-import { SearchableSelect } from '@/components/common/SearchableSelect';
+import { FilterTabs } from '@/components/common/FilterTabs';
 import { followUpSchema, FollowUpFormValues } from '../schemas/lead.schema';
 import { FOLLOW_UP_TYPES } from '@/lib/constants';
 
@@ -41,7 +41,7 @@ export function FollowUpForm({ open, onOpenChange, onSubmit }: FollowUpFormProps
       title="Add Follow-Up"
       description="Record a follow-up activity for this lead"
       icon={CalendarPlus}
-      maxWidth="sm:max-w-md"
+      maxWidth="sm:max-w-xl"
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -58,12 +58,12 @@ export function FollowUpForm({ open, onOpenChange, onSubmit }: FollowUpFormProps
             <FormItem>
               <FormLabel>Type <span className="text-destructive">*</span></FormLabel>
               <FormControl>
-                <SearchableSelect
+                <FilterTabs
+                  aria-label="Follow-up type"
                   value={field.value}
-                  onValueChange={field.onChange}
+                  onChange={field.onChange}
                   options={FOLLOW_UP_TYPES.map((t) => ({ value: t.value, label: t.label }))}
-                  placeholder="Select type"
-                  searchPlaceholder="Search type..."
+                  className="flex h-auto min-h-0 w-full flex-wrap gap-1 rounded-xl p-1"
                 />
               </FormControl>
               <FormMessage />

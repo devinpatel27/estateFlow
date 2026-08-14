@@ -11,6 +11,7 @@ import {
   ACTIVE_LEAD_STATUSES,
   CLOSED_LEAD_STATUSES,
   STATUS_LABELS,
+  LEAD_STATUS_BUCKETS,
   LeadStatus,
 } from '../../constants/lead.constants';
 import { VISIT_STATUS_LABELS, VisitStatus } from '../../constants/visit.constants';
@@ -28,15 +29,7 @@ import {
 
 const ACTIVE_PROPERTY_STATUSES = ['available', 'under_negotiation', 'reserved'];
 
-const PIE_LEAD_STATUSES: LeadStatus[] = [
-  'new',
-  'contacted',
-  'follow_up',
-  'visit_scheduled',
-  'negotiation',
-  'closed_won',
-  'closed_lost',
-];
+const PIE_LEAD_STATUSES: LeadStatus[] = ['open', 'pending', 'closed'];
 
 function pct(numerator: number, denominator: number): number {
   if (denominator === 0) return 0;
@@ -112,14 +105,14 @@ export const reportsService = {
       closedLost,
     ] = await Promise.all([
       LeadModel.countDocuments(leadMatch),
-      countLeads(filters, scope, { status: 'new' }),
-      countLeads(filters, scope, { status: 'contacted' }),
-      countLeads(filters, scope, { status: 'follow_up' }),
+      countLeads(filters, scope, { status: 'open' }),
+      countLeads(filters, scope, { status: 'open' }),
+      countLeads(filters, scope, { status: 'pending' }),
       countLeads(filters, scope, { priority: 'hot', status: { $in: ACTIVE_LEAD_STATUSES } }),
       countLeads(filters, scope, { priority: 'warm', status: { $in: ACTIVE_LEAD_STATUSES } }),
       countLeads(filters, scope, { priority: 'cold', status: { $in: ACTIVE_LEAD_STATUSES } }),
-      countLeads(filters, scope, { status: 'closed_won' }),
-      countLeads(filters, scope, { status: 'closed_lost' }),
+      countLeads(filters, scope, { status: 'closed' }),
+      countLeads(filters, scope, { status: 'closed' }),
     ]);
 
     const conversionRate = pct(closedWon, totalLeads);
@@ -128,16 +121,11 @@ export const reportsService = {
       PIE_LEAD_STATUSES.map(async (status) => ({
         status,
         label: STATUS_LABELS[status],
-        count: await LeadModel.countDocuments({ ...leadMatch, status }),
+        count: await LeadModel.countDocuments({ ...leadMatch, status: { $in: LEAD_STATUS_BUCKETS[status] } }),
       }))
     );
 
-    const revisitCount = await LeadModel.countDocuments({ ...leadMatch, status: 'revisit_scheduled' });
-    const statusDistribution = statusCounts.map((s) =>
-      s.status === 'visit_scheduled'
-        ? { ...s, count: s.count + revisitCount }
-        : s
-    );
+    const statusDistribution = statusCounts;
 
     const leadSources = await LeadSourceModel.find({ status: 'active' }).lean();
     const sourceBuckets = ['Website', 'Facebook', 'Instagram', 'Referral', 'Walk-in', 'Other'];
@@ -226,7 +214,7 @@ export const reportsService = {
             LeadFollowUpModel.countDocuments({ createdBy: empId }),
             VisitModel.countDocuments({ ...visitMatch, status: 'scheduled' }),
             VisitModel.countDocuments({ ...visitMatch, status: 'completed' }),
-            LeadModel.countDocuments({ ...leadMatch, status: 'closed_won' }),
+            LeadModel.countDocuments({ ...leadMatch, status: 'closed' }),
           ]);
 
         return {

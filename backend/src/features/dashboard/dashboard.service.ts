@@ -13,13 +13,13 @@ import { PERMISSIONS } from '../../constants/permissions';
 type DateBucket = 'today' | 'tomorrow' | 'due';
 
 const PERFORMANCE_GROUPS = {
-  newEnquiry: ['new'],
-  phoneCall: ['contacted', 'follow_up'],
-  siteVisit: ['visit_scheduled'],
-  multipleVisit: ['revisit_scheduled'],
-  discussion: ['negotiation'],
-  dealSucceed: ['closed_won'],
-  dealLost: ['closed_lost'],
+  newEnquiry: ['open'],
+  phoneCall: ['open'],
+  siteVisit: ['pending'],
+  multipleVisit: ['pending'],
+  discussion: ['pending'],
+  dealSucceed: ['closed'],
+  dealLost: ['closed'],
 } as const;
 
 function getDateRanges(now = new Date()) {
@@ -216,7 +216,7 @@ export const dashboardService = {
       coldLeads,
       ...bucketResults
     ] = await Promise.all([
-      LeadModel.countDocuments({ ...leadFilter, status: 'new' }),
+      LeadModel.countDocuments({ ...leadFilter, status: 'open' }),
       LeadModel.countDocuments({ ...leadFilter, priority: 'hot', status: { $in: ACTIVE_LEAD_STATUSES } }),
       LeadModel.countDocuments({ ...leadFilter, priority: 'warm', status: { $in: ACTIVE_LEAD_STATUSES } }),
       LeadModel.countDocuments({ ...leadFilter, priority: 'cold', status: { $in: ACTIVE_LEAD_STATUSES } }),

@@ -54,16 +54,25 @@ export function RowActionButton({
           rel="noopener noreferrer"
           className={className}
           aria-label={label}
+          onClick={(event) => event.stopPropagation()}
         >
           {iconEl}
         </a>
       ) : (
-        <Link href={href} className={className} aria-label={label}>
+        <Link href={href} className={className} aria-label={label} onClick={(event) => event.stopPropagation()}>
           {iconEl}
         </Link>
       )
     ) : (
-      <button type="button" onClick={onClick} className={className} aria-label={label}>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onClick?.();
+        }}
+        className={className}
+        aria-label={label}
+      >
         {iconEl}
       </button>
     );

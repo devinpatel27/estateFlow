@@ -122,7 +122,7 @@ export const leadAutoAssignService = {
         budgetMin: property.expectedPrice || property.rentAmount,
         propertyId: new Types.ObjectId(params.propertyId),
         priority: 'warm',
-        status: 'new',
+        status: 'open',
         initialRemark: remark,
         createdBy: systemUserId,
       });
@@ -191,7 +191,7 @@ export const leadAutoAssignService = {
       propertyType: propertyTypeId,
       leadSource: leadSourceId,
       priority: 'warm',
-      status: 'new',
+      status: 'open',
       initialRemark: remark,
       createdBy: systemUserId,
     });

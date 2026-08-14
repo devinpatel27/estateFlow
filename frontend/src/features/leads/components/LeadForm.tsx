@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, User, Target, Briefcase } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, User, Target, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import {
@@ -11,18 +11,42 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/common/DatePicker';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
-import { BudgetRangeInput } from '@/components/common/BudgetRangeInput';
 import { createLeadSchema, updateLeadSchema, CreateLeadFormValues } from '../schemas/lead.schema';
 import { leadService } from '../services/lead.service';
 import { masterService } from '../services/master.service';
 import { employeeService } from '@/features/employees/services/employee.service';
+import { propertyService } from '@/features/properties/services/property.service';
 import { Lead, MasterItem } from '../types/lead.types';
 import { Employee } from '@/features/employees/types/employee.types';
 import { LEAD_CATEGORIES, LEAD_PRIORITIES, ROUTES, PERMISSIONS } from '@/lib/constants';
 import { cn, normalizeMobileInput } from '@/lib/utils';
 import { DuplicateLeadAlert } from './DuplicateLeadAlert';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useDebounce } from '@/hooks/useDebounce';
+
+const PROPERTY_CONFIG_OPTIONS = ['1 BHK', '2 BHK', '3 BHK', '4 BHK'];
+const BUDGET_RANGE_OPTIONS = [
+  { value: '2500000-5000000', label: '25L - 50L', min: 2500000, max: 5000000 },
+  { value: '5000000-7500000', label: '50L - 75L', min: 5000000, max: 7500000 },
+  { value: '7500000-10000000', label: '75L - 1Cr', min: 7500000, max: 10000000 },
+  { value: '10000000-15000000', label: '1Cr - 1.5Cr', min: 10000000, max: 15000000 },
+  { value: '15000000-25000000', label: '1.5Cr - 2.5Cr', min: 15000000, max: 25000000 },
+];
+
+type MobileCheckStatus = 'idle' | 'checking' | 'available' | 'duplicate' | 'invalid';
+
+function getConfigurationOptions(propertyTypeName?: string) {
+  const name = propertyTypeName?.toLowerCase() || '';
+  if (name.includes('villa') || name.includes('flat') || name.includes('apartment')) {
+    return PROPERTY_CONFIG_OPTIONS.filter((option) => option !== '1 BHK');
+  }
+  if (name.includes('plot') || name.includes('land') || name.includes('shop') || name.includes('office')) {
+    return [];
+  }
+  return PROPERTY_CONFIG_OPTIONS;
+}
 
 interface LeadFormProps {
   lead?: Lead;
@@ -50,7 +74,9 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
   const [propertyTypes, setPropertyTypes] = useState<MasterItem[]>([]);
   const [leadSources, setLeadSources] = useState<MasterItem[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [areas, setAreas] = useState<string[]>([]);
   const [duplicateLead, setDuplicateLead] = useState<Lead | null>(null);
+  const [mobileCheckStatus, setMobileCheckStatus] = useState<MobileCheckStatus>('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const isModal = variant === 'modal';
@@ -70,19 +96,23 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
       address: lead.address || '',
       category: lead.category as CreateLeadFormValues['category'],
       propertyType: typeof lead.propertyType === 'object' ? lead.propertyType._id : lead.propertyType,
+      propertyConfiguration: lead.propertyConfiguration || '',
       leadSource: typeof lead.leadSource === 'object' ? lead.leadSource._id : lead.leadSource,
       budgetMin: lead.budgetMin,
       budgetMax: lead.budgetMax,
+      nextFollowUpDate: lead.nextFollowUpDate ? lead.nextFollowUpDate.split('T')[0] : '',
       preferredArea: lead.preferredArea || '',
       assignedTo: lead.assignedTo?._id || '',
       priority: lead.priority,
       initialRemark: lead.initialRemark || '',
     } : {
       customerName: '', mobile: '', alternateMobile: '', email: '', city: '', address: '',
-      category: 'buy_property', propertyType: '', leadSource: '', preferredArea: '',
-      assignedTo: '', priority: 'warm', initialRemark: '',
+      category: 'buy_property', propertyType: '', propertyConfiguration: '', leadSource: '', preferredArea: '',
+      assignedTo: '', priority: 'warm', nextFollowUpDate: '', initialRemark: '',
     },
   });
+  const watchedMobile = form.watch('mobile');
+  const debouncedMobile = useDebounce(watchedMobile, 350);
 
   useEffect(() => {
     const loaders: Promise<unknown>[] = [
@@ -108,17 +138,53 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
     });
   }, [canAssignOnCreate, mode]);
 
-  const checkMobileDuplicate = async (mobile: string) => {
-    if (mode !== 'create' || mobile.length < 10) return;
+  useEffect(() => {
+    propertyService.list({ limit: 200 }).then((res) => {
+      const nextAreas = Array.from(
+        new Set((res.data || []).map((property) => property.area?.trim()).filter(Boolean) as string[])
+      ).sort((a, b) => a.localeCompare(b));
+      setAreas(nextAreas);
+    }).catch(() => setAreas([]));
+  }, []);
+
+  const selectedPropertyType = propertyTypes.find((item) => item._id === form.watch('propertyType'));
+  const configurationOptions = getConfigurationOptions(selectedPropertyType?.name);
+
+  const verifyMobile = async (mobile: string) => {
+    const normalized = normalizeMobileInput(mobile);
+    if (mode !== 'create') return;
+    if (!normalized) {
+      setDuplicateLead(null);
+      setMobileCheckStatus('idle');
+      return;
+    }
+    if (normalized.length < 10) {
+      setDuplicateLead(null);
+      setMobileCheckStatus('invalid');
+      return;
+    }
+
+    setMobileCheckStatus('checking');
     try {
-      const res = await leadService.checkMobile(mobile);
+      const res = await leadService.checkMobile(normalized);
       if (res.success && res.data?.activeLead) {
         setDuplicateLead(res.data.activeLead);
+        setMobileCheckStatus('duplicate');
       } else {
         setDuplicateLead(null);
+        setMobileCheckStatus('available');
       }
-    } catch { /* ignore */ }
+    } catch {
+      setDuplicateLead(null);
+      setMobileCheckStatus('idle');
+    }
   };
+
+  useEffect(() => {
+    verifyMobile(debouncedMobile || '');
+  }, [debouncedMobile]);
+
+  const normalizeNumberField = (value: string) => value.replace(/\D/g, '').slice(-10);
 
   const handleCancel = () => {
     if (onCancel) {
@@ -139,8 +205,10 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
         ...values,
         mobile: normalizeMobileInput(values.mobile),
         alternateMobile: values.alternateMobile ? normalizeMobileInput(values.alternateMobile) : undefined,
+        propertyConfiguration: values.propertyConfiguration || undefined,
         budgetMin: values.budgetMin ? Number(values.budgetMin) : undefined,
         budgetMax: values.budgetMax ? Number(values.budgetMax) : undefined,
+        nextFollowUpDate: values.nextFollowUpDate || undefined,
         assignedTo: values.assignedTo || undefined,
         email: values.email || undefined,
       };
@@ -184,6 +252,102 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
         <div className={cn(isModal && 'min-h-0 flex-1 space-y-5 overflow-y-auto pr-1', !isModal && 'space-y-5')}>
         {duplicateLead && <DuplicateLeadAlert activeLead={duplicateLead} onDismiss={() => setDuplicateLead(null)} />}
 
+        <FormSection icon={User} title="Customer Information" compact={isModal}>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormField control={form.control} name="customerName" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Customer Name <span className="text-destructive">*</span></FormLabel>
+                <FormControl><Input className="crm-input" placeholder="Customer name" disabled={isSubmitting} {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="mobile" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Mobile <span className="text-destructive">*</span></FormLabel>
+                <FormControl>
+                  <Input
+                    className={cn(
+                      'crm-input',
+                      mobileCheckStatus === 'available' && 'border-emerald-500 focus-visible:ring-emerald-500/25',
+                      mobileCheckStatus === 'duplicate' && 'border-amber-500 focus-visible:ring-amber-500/25',
+                      mobileCheckStatus === 'invalid' && field.value && 'border-destructive focus-visible:ring-destructive/25'
+                    )}
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="9876543210"
+                    disabled={isSubmitting || mode === 'edit'}
+                    {...field}
+                    onChange={(e) => field.onChange(normalizeNumberField(e.target.value))}
+                    onBlur={(e) => {
+                      field.onBlur();
+                      verifyMobile(e.target.value);
+                    }}
+                  />
+                </FormControl>
+                {mode === 'create' && mobileCheckStatus === 'checking' && (
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Checking mobile number...
+                  </p>
+                )}
+                {mode === 'create' && mobileCheckStatus === 'available' && (
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Number available for new lead
+                  </p>
+                )}
+                {mode === 'create' && mobileCheckStatus === 'duplicate' && (
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-amber-700">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    Lead already exists for this mobile number
+                  </p>
+                )}
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="alternateMobile" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Alternate Mobile</FormLabel>
+                <FormControl>
+                  <Input
+                    className="crm-input"
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="Alternate mobile"
+                    disabled={isSubmitting}
+                    {...field}
+                    onChange={(e) => field.onChange(normalizeNumberField(e.target.value))}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="email" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl><Input className="crm-input" type="email" placeholder="email@example.com" disabled={isSubmitting} {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="city" render={({ field }) => (
+              <FormItem>
+                <FormLabel>City</FormLabel>
+                <FormControl><Input className="crm-input" placeholder="City" disabled={isSubmitting} {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <div className="md:col-span-2">
+              <FormField control={form.control} name="address" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Address</FormLabel>
+                  <FormControl><Input className="crm-input" placeholder="Street address" disabled={isSubmitting} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+          </div>
+        </FormSection>
+
         <FormSection icon={Target} title="Lead Information" compact={isModal}>
           <FormField control={form.control} name="category" render={({ field }) => (
             <FormItem>
@@ -226,7 +390,10 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
                 <FormControl>
                   <SearchableSelect
                     value={field.value}
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      form.setValue('propertyConfiguration', '', { shouldValidate: true });
+                    }}
                     options={propertyTypes.map((item) => ({ value: item._id, label: item.name }))}
                     placeholder="Select property type"
                     searchPlaceholder="Search property types..."
@@ -236,6 +403,24 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
                 <FormMessage />
               </FormItem>
             )} />
+            {configurationOptions.length > 0 && (
+              <FormField control={form.control} name="propertyConfiguration" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Property</FormLabel>
+                  <FormControl>
+                    <SearchableSelect
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      options={configurationOptions.map((item) => ({ value: item, label: item }))}
+                      placeholder="Select 2BHK / 3BHK / 4BHK"
+                      searchPlaceholder="Search property..."
+                      disabled={isSubmitting}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            )}
             <FormField control={form.control} name="leadSource" render={({ field }) => (
               <FormItem>
                 <FormLabel>Lead Source <span className="text-destructive">*</span></FormLabel>
@@ -272,11 +457,18 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
               <FormItem className="md:col-span-2">
                 <FormLabel>Budget Range</FormLabel>
                 <FormControl>
-                  <BudgetRangeInput
-                    minValue={form.watch('budgetMin')}
-                    maxValue={form.watch('budgetMax')}
-                    onMinChange={(v) => form.setValue('budgetMin', v, { shouldValidate: true })}
-                    onMaxChange={(v) => form.setValue('budgetMax', v, { shouldValidate: true })}
+                  <SearchableSelect
+                    value={
+                      BUDGET_RANGE_OPTIONS.find((option) => option.min === form.watch('budgetMin') && option.max === form.watch('budgetMax'))?.value || ''
+                    }
+                    onValueChange={(value) => {
+                      const option = BUDGET_RANGE_OPTIONS.find((item) => item.value === value);
+                      form.setValue('budgetMin', option?.min, { shouldValidate: true });
+                      form.setValue('budgetMax', option?.max, { shouldValidate: true });
+                    }}
+                    options={BUDGET_RANGE_OPTIONS.map((item) => ({ value: item.value, label: item.label }))}
+                    placeholder="Select budget range"
+                    searchPlaceholder="Search budget range..."
                     disabled={isSubmitting}
                   />
                 </FormControl>
@@ -290,7 +482,21 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
             <FormField control={form.control} name="preferredArea" render={({ field }) => (
               <FormItem>
                 <FormLabel>Preferred Area</FormLabel>
-                <FormControl><Input className="crm-input" placeholder="Preferred location" disabled={isSubmitting} {...field} /></FormControl>
+                <FormControl>
+                  <SearchableSelect
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={[
+                      ...areas.map((area) => ({ value: area, label: area })),
+                      ...(field.value && !areas.includes(field.value) ? [{ value: field.value, label: field.value }] : []),
+                    ]}
+                    placeholder="Select or type custom area"
+                    searchPlaceholder="Type custom area..."
+                    emptyText="Type area name and press Enter"
+                    allowCustomValue
+                    disabled={isSubmitting}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -315,15 +521,30 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
                 </FormItem>
               )} />
             )}
+            {mode === 'create' && (
+              <FormField control={form.control} name="nextFollowUpDate" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Next Follow-up Date</FormLabel>
+                  <FormControl>
+                    <DatePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select next follow-up date"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            )}
             <div className="md:col-span-2">
               <FormField control={form.control} name="initialRemark" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Initial Remark</FormLabel>
+                  <FormLabel>{mode === 'create' ? 'Initial Remark' : 'Initial Remark (Locked)'}</FormLabel>
                   <FormControl>
                     <textarea
                       className="crm-input min-h-[80px] w-full resize-y px-3 py-2"
                       placeholder="Initial notes about this lead..."
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || mode === 'edit'}
                       {...field}
                     />
                   </FormControl>
@@ -334,57 +555,6 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
           </div>
         </FormSection>
 
-        <FormSection icon={User} title="Customer Information" compact={isModal}>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormField control={form.control} name="customerName" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Customer Name <span className="text-destructive">*</span></FormLabel>
-                <FormControl><Input className="crm-input" placeholder="Customer name" disabled={isSubmitting} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="mobile" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Mobile <span className="text-destructive">*</span></FormLabel>
-                <FormControl>
-                  <Input className="crm-input" placeholder="9876543210" disabled={isSubmitting || mode === 'edit'} {...field}
-                    onBlur={(e) => { field.onBlur(); checkMobileDuplicate(e.target.value); }} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="alternateMobile" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Alternate Mobile</FormLabel>
-                <FormControl><Input className="crm-input" placeholder="Alternate mobile" disabled={isSubmitting} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="email" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl><Input className="crm-input" type="email" placeholder="email@example.com" disabled={isSubmitting} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="city" render={({ field }) => (
-              <FormItem>
-                <FormLabel>City</FormLabel>
-                <FormControl><Input className="crm-input" placeholder="City" disabled={isSubmitting} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <div className="md:col-span-2">
-              <FormField control={form.control} name="address" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl><Input className="crm-input" placeholder="Street address" disabled={isSubmitting} {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-          </div>
-        </FormSection>
         </div>
 
         <div

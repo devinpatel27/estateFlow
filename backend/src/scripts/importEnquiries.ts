@@ -114,18 +114,17 @@ const resolveStatus = (lastRemark: string): LeadStatus => {
   if (
     /purchase kari lidhu|lai lidhu|lailidhu|invest kari|purchase kari|brokar/.test(r)
   ) {
-    return 'closed_lost';
+    return 'closed';
   }
-  if (/not interested|no requirement/.test(r)) return 'closed_lost';
-  if (/postpone/.test(r)) return 'follow_up';
-  if (/call.*(not|nor).*receiv/.test(r)) return 'follow_up';
-  if (/\bclosed\b/.test(r)) return 'closed_won';
-  return 'contacted';
+  if (/not interested|no requirement/.test(r)) return 'closed';
+  if (/postpone/.test(r)) return 'pending';
+  if (/call.*(not|nor).*receiv/.test(r)) return 'pending';
+  if (/\bclosed\b/.test(r)) return 'closed';
+  return 'open';
 };
 
 const resolvePriority = (status: LeadStatus, index: number): LeadPriority => {
-  if (status === 'closed_lost') return 'cold';
-  if (status === 'closed_won') return 'hot';
+  if (status === 'closed') return 'cold';
   const cycle: LeadPriority[] = ['warm', 'hot', 'cold'];
   return cycle[index % cycle.length];
 };
@@ -320,7 +319,7 @@ async function run() {
     const priority = resolvePriority(status, i);
     const category = resolveCategory(row.enquiryFor);
     const createdAt = parseDdMmYyyy(row.createdOn) || new Date();
-    const isClosed = status === 'closed_won' || status === 'closed_lost';
+    const isClosed = status === 'closed';
     const nextFollowUpDate = isClosed ? undefined : parseDdMmYyyy(row.nfd);
 
     const leadIdStr = `LD${String(nextLeadNumber).padStart(4, '0')}`;

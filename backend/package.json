@@ -13,7 +13,8 @@
     "render:build": "npm ci --include=dev --include=optional && npm run build",
     "render:start": "npm run render:build && npm start",
     "seed": "ts-node src/scripts/seedAdmin.ts",
-    "import:enquiries": "ts-node src/scripts/importEnquiries.ts"
+    "import:enquiries": "ts-node src/scripts/importEnquiries.ts",
+    "backfill:latest-nfd": "ts-node src/scripts/backfillLatestNfd.ts"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",

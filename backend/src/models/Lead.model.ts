@@ -18,6 +18,7 @@ export interface ILead extends Document {
   address?: string;
   category: LeadCategory;
   propertyType: Types.ObjectId;
+  propertyConfiguration?: string;
   leadSource: Types.ObjectId;
   budgetMin?: number;
   budgetMax?: number;
@@ -58,12 +59,13 @@ const leadSchema = new Schema<ILead>(
     address: { type: String, trim: true },
     category: { type: String, enum: LEAD_CATEGORIES, required: true },
     propertyType: { type: Schema.Types.ObjectId, ref: 'PropertyType', required: true },
+    propertyConfiguration: { type: String, trim: true },
     leadSource: { type: Schema.Types.ObjectId, ref: 'LeadSource', required: true },
     budgetMin: { type: Number, min: 0 },
     budgetMax: { type: Number, min: 0 },
     preferredArea: { type: String, trim: true },
     priority: { type: String, enum: LEAD_PRIORITIES, default: 'warm' },
-    status: { type: String, enum: LEAD_STATUSES, default: 'new' },
+    status: { type: String, enum: LEAD_STATUSES, default: 'open' },
     initialRemark: { type: String, trim: true },
     notes: { type: [noteSchema], default: [] },
     assignedTo: { type: Schema.Types.ObjectId, ref: 'User' },

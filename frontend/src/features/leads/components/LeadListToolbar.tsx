@@ -21,6 +21,8 @@ const FOLLOW_UP_DUE_OPTIONS = [
   { value: 'overdue' as const, label: 'Due' },
 ];
 
+const PROPERTY_CONFIGURATION_OPTIONS = ['1 BHK', '2 BHK', '3 BHK', '4 BHK'];
+
 interface LeadListToolbarProps {
   params: LeadListParams;
   searchInput: string;
@@ -43,6 +45,7 @@ export function LeadListToolbar({
   const categoryLabel = params.category
     ? formatLeadCategoryShort(params.category)
     : 'All Categories';
+  const propertyConfigurationLabel = params.propertyConfiguration || 'All Property';
 
   return (
     <div className="w-full min-w-0 space-y-2">
@@ -74,7 +77,16 @@ export function LeadListToolbar({
           className="w-full md:w-auto"
         />
       </div>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-[auto_1fr] md:items-center">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">DATE NFD</span>
+        <DateRangePicker
+          dateFrom={params.nfdFrom}
+          dateTo={params.nfdTo}
+          onChange={(range) => onParamsChange({ nfdFrom: range.dateFrom, nfdTo: range.dateTo, page: 1 })}
+          className="w-full md:w-auto"
+        />
+      </div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
         <Select
           value={params.status || 'all'}
           onValueChange={(v) => onParamsChange({ status: v === 'all' ? undefined : v, page: 1 })}
@@ -115,6 +127,20 @@ export function LeadListToolbar({
             <SelectItem value="all">All Categories</SelectItem>
             {LEAD_CATEGORIES.map((c) => (
               <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={params.propertyConfiguration || 'all'}
+          onValueChange={(v) => onParamsChange({ propertyConfiguration: v === 'all' ? undefined : v, page: 1 })}
+        >
+          <SelectTrigger className="crm-select-trigger w-full cursor-pointer text-sm">
+            <span className="truncate">{propertyConfigurationLabel}</span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Property</SelectItem>
+            {PROPERTY_CONFIGURATION_OPTIONS.map((item) => (
+              <SelectItem key={item} value={item}>{item}</SelectItem>
             ))}
           </SelectContent>
         </Select>

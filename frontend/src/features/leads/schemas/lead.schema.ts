@@ -16,12 +16,14 @@ const baseLeadSchema = z.object({
   address: z.string().optional(),
   category: z.enum(['buy_property', 'sell_property', 'rent_property']),
   propertyType: z.string().min(1, 'Property type is required'),
+  propertyConfiguration: z.string().optional(),
   leadSource: z.string().min(1, 'Lead source is required'),
   budgetMin: z.coerce.number().min(0).optional().or(z.literal('')),
   budgetMax: z.coerce.number().min(0).optional().or(z.literal('')),
   preferredArea: z.string().optional(),
   assignedTo: z.string().optional(),
   priority: z.enum(['hot', 'warm', 'cold']).default('warm'),
+  nextFollowUpDate: z.string().optional(),
   initialRemark: z.string().optional(),
 });
 
@@ -42,7 +44,7 @@ const budgetRangeRefine = <T extends z.ZodTypeAny>(schema: T) =>
 export const createLeadSchema = budgetRangeRefine(baseLeadSchema);
 
 export const updateLeadSchema = budgetRangeRefine(
-  baseLeadSchema.partial().omit({ mobile: true }).extend({
+  baseLeadSchema.partial().omit({ mobile: true, initialRemark: true }).extend({
     mobile: mobileSchema.optional(),
   })
 );
@@ -65,8 +67,7 @@ export const noteSchema = z.object({
 
 export const statusUpdateSchema = z.object({
   status: z.enum([
-    'new', 'contacted', 'follow_up', 'visit_scheduled', 'revisit_scheduled',
-    'negotiation', 'closed_won', 'closed_lost',
+    'open', 'pending', 'closed',
   ]),
   remark: z.string().optional(),
 });

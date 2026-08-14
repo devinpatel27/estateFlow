@@ -7,7 +7,7 @@ export const leadController = {
   list: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { page, limit, skip } = getPagination(req);
-      const { search, status, category, priority, propertyType, leadSource, assignedTo, sortBy, sortOrder, dateFrom, dateTo, followUpDue } =
+      const { search, status, category, priority, propertyType, propertyConfiguration, leadSource, assignedTo, sortBy, sortOrder, dateFrom, dateTo, nfdFrom, nfdTo, followUpDue } =
         req.query;
 
       const { data, total } = await leadService.list(req.user!, {
@@ -18,12 +18,15 @@ export const leadController = {
         category: category as string,
         priority: priority as string,
         propertyType: propertyType as string,
+        propertyConfiguration: propertyConfiguration as string,
         leadSource: leadSource as string,
         assignedTo: assignedTo as string,
         sortBy: sortBy as string,
         sortOrder: sortOrder as 'asc' | 'desc',
         dateFrom: dateFrom as string,
         dateTo: dateTo as string,
+        nfdFrom: nfdFrom as string,
+        nfdTo: nfdTo as string,
         followUpDue: followUpDue as 'today' | 'tomorrow' | 'overdue',
       });
 

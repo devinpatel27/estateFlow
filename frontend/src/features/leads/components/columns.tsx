@@ -36,7 +36,15 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
       id: 'customerName',
       accessorKey: 'customerName',
       header: ({ column }) => (
-        <Button variant="ghost" size="sm" className="-ml-3 h-8 cursor-pointer text-xs font-semibold" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-3 h-8 cursor-pointer text-xs font-semibold"
+          onClick={(event) => {
+            event.stopPropagation();
+            column.toggleSorting(column.getIsSorted() === 'asc');
+          }}
+        >
           Customer
           <ArrowUpDown className="ml-1.5 h-3 w-3" />
         </Button>
@@ -82,7 +90,7 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
     },
     {
       accessorKey: 'nextFollowUpDate',
-      header: () => <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide">Next Follow-up</span>,
+      header: () => <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide">NFD</span>,
       cell: ({ row }) => <NextFollowUpCell date={row.original.nextFollowUpDate} />,
       size: 140,
     },

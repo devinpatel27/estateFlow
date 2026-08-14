@@ -4,28 +4,27 @@ export type LeadCategory = (typeof LEAD_CATEGORIES)[number];
 export const LEAD_PRIORITIES = ['hot', 'warm', 'cold'] as const;
 export type LeadPriority = (typeof LEAD_PRIORITIES)[number];
 
-export const LEAD_STATUSES = [
-  'new',
-  'contacted',
-  'follow_up',
-  'visit_scheduled',
-  'revisit_scheduled',
-  'negotiation',
-  'closed_won',
-  'closed_lost',
-] as const;
+export const LEAD_STATUSES = ['open', 'pending', 'closed'] as const;
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
-export const ACTIVE_LEAD_STATUSES: LeadStatus[] = [
+export const ACTIVE_LEAD_STATUSES = [
+  'open',
+  'pending',
   'new',
   'contacted',
   'follow_up',
   'visit_scheduled',
   'revisit_scheduled',
   'negotiation',
-];
+] as const;
 
-export const CLOSED_LEAD_STATUSES: LeadStatus[] = ['closed_won', 'closed_lost'];
+export const CLOSED_LEAD_STATUSES = ['closed', 'closed_won', 'closed_lost'] as const;
+
+export const LEAD_STATUS_BUCKETS: Record<LeadStatus, readonly string[]> = {
+  open: ['open', 'new', 'contacted'],
+  pending: ['pending', 'follow_up', 'visit_scheduled', 'revisit_scheduled', 'negotiation'],
+  closed: CLOSED_LEAD_STATUSES,
+};
 
 export const FOLLOW_UP_TYPES = [
   'call',
@@ -56,14 +55,9 @@ export const LEAD_ACTIVITY_TYPES = [
 export type LeadActivityType = (typeof LEAD_ACTIVITY_TYPES)[number];
 
 export const STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  new: ['contacted', 'closed_lost'],
-  contacted: ['follow_up', 'closed_lost'],
-  follow_up: ['visit_scheduled', 'negotiation', 'closed_lost'],
-  visit_scheduled: ['revisit_scheduled', 'negotiation', 'closed_lost'],
-  revisit_scheduled: ['negotiation', 'closed_lost'],
-  negotiation: ['closed_won', 'closed_lost'],
-  closed_won: [],
-  closed_lost: [],
+  open: ['pending', 'closed'],
+  pending: ['open', 'closed'],
+  closed: ['open', 'pending'],
 };
 
 export const CATEGORY_LABELS: Record<LeadCategory, string> = {
@@ -73,14 +67,9 @@ export const CATEGORY_LABELS: Record<LeadCategory, string> = {
 };
 
 export const STATUS_LABELS: Record<LeadStatus, string> = {
-  new: 'New',
-  contacted: 'Contacted',
-  follow_up: 'Follow-Up',
-  visit_scheduled: 'Visit Scheduled',
-  revisit_scheduled: 'Re-Visit Scheduled',
-  negotiation: 'Negotiation',
-  closed_won: 'Closed Won',
-  closed_lost: 'Closed Lost',
+  open: 'Open',
+  pending: 'Pending',
+  closed: 'Closed',
 };
 
 export const PRIORITY_LABELS: Record<LeadPriority, string> = {

@@ -59,6 +59,7 @@ interface DataTableProps<TData, TValue> {
   toolbarActions?: React.ReactNode;
   emptyState?: React.ReactNode;
   getRowClassName?: (row: TData) => string | undefined;
+  onRowClick?: (row: TData) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -78,6 +79,7 @@ export function DataTable<TData, TValue>({
   toolbarActions,
   emptyState,
   getRowClassName,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -230,8 +232,10 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
+                  onClick={() => onRowClick?.(row.original)}
                   className={cn(
                     'transition-colors',
+                    onRowClick && 'cursor-pointer',
                     row.getIsSelected() && 'bg-primary/5',
                     getRowClassName?.(row.original)
                   )}

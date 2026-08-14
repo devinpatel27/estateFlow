@@ -3,6 +3,7 @@ import { VisitModel, IVisit } from '../../models/Visit.model';
 import { VisitHistoryModel } from '../../models/VisitHistory.model';
 import { VisitFavoriteModel } from '../../models/VisitFavorite.model';
 import { LeadModel } from '../../models/Lead.model';
+import { UserModel } from '../../models/User.model';
 import { isValidObjectId, toObjectId } from '../../utils/objectId.utils';
 import { VisitHistoryAction } from '../../constants/visit.constants';
 
@@ -63,10 +64,11 @@ export const visitRepository = {
       query.leadId = { $in: leadIds };
     }
 
-    if (options.favorite && options.userId) {
+    if (options.favorite !== undefined && options.userId) {
       const favoriteIds = await getFavoriteVisitIds(options.userId);
-      if (favoriteIds.length === 0) return { data: [], total: 0 };
-      query._id = { $in: favoriteIds };
+      query._id = options.favorite
+        ? { $in: favoriteIds }
+        : { $nin: favoriteIds };
     }
 
     if (options.type) query.type = options.type;
@@ -84,23 +86,44 @@ export const visitRepository = {
 
     if (options.search) {
       const searchRegex = { $regex: options.search, $options: 'i' };
+      const matchingUsers = await UserModel.find({
+        $or: [
+          { name: searchRegex },
+          { employeeId: searchRegex },
+          { email: searchRegex },
+        ],
+      }).select('_id').lean();
+      const assignedToIds = matchingUsers.map((user) => user._id);
       const matchingLeads = await LeadModel.find({
         deletedAt: null,
         $or: [
           { customerName: searchRegex },
           { mobile: searchRegex },
           { leadId: searchRegex },
+          { preferredArea: searchRegex },
+          { city: searchRegex },
+          { initialRemark: searchRegex },
+          ...(assignedToIds.length ? [{ assignedTo: { $in: assignedToIds } }] : []),
         ],
       })
         .select('_id')
         .lean();
       const leadIds = matchingLeads.map((l) => l._id);
-      if (leadIds.length === 0) return { data: [], total: 0 };
-      query.leadId = query.leadId
-        ? { $in: (query.leadId as { $in: Types.ObjectId[] }).$in.filter((id) =>
-            leadIds.some((lid) => String(lid) === String(id))
-          )}
-        : { $in: leadIds };
+      const visitSearchClause: FilterQuery<IVisit>[] = [
+        { remark: searchRegex },
+      ];
+      if (leadIds.length > 0) {
+        visitSearchClause.push({ leadId: { $in: leadIds } });
+      }
+      const searchFilter = { $or: visitSearchClause };
+      if (query.leadId && leadIds.length > 0) {
+        const scopedIds = (query.leadId as { $in: Types.ObjectId[] }).$in.filter((id) =>
+          leadIds.some((lid) => String(lid) === String(id))
+        );
+        query.$and = [...(Array.isArray(query.$and) ? query.$and : []), { $or: [{ leadId: { $in: scopedIds } }, { remark: searchRegex }] }];
+      } else {
+        query.$and = [...(Array.isArray(query.$and) ? query.$and : []), searchFilter];
+      }
     }
 
     const sortFieldMap: Record<string, string> = {

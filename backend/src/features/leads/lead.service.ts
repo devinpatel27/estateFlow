@@ -70,9 +70,9 @@ export const leadService = {
 
     const normalized = normalizeMobile(mobile);
     const leads = await leadRepository.findByMobile(normalized);
-    const activeLead = leads.find((l) => ACTIVE_LEAD_STATUSES.includes(l.status as LeadStatus));
+    const activeLead = leads.find((l) => (ACTIVE_LEAD_STATUSES as readonly string[]).includes(l.status as string));
     const closedLeads = leads.filter((l) =>
-      CLOSED_LEAD_STATUSES.includes(l.status as LeadStatus)
+      (CLOSED_LEAD_STATUSES as readonly string[]).includes(l.status as string)
     );
 
     return {
@@ -119,12 +119,14 @@ export const leadService = {
       address: data.address,
       category: data.category as LeadCategory,
       propertyType: new Types.ObjectId(data.propertyType),
+      propertyConfiguration: data.propertyConfiguration,
       leadSource: new Types.ObjectId(data.leadSource),
       budgetMin: data.budgetMin,
       budgetMax: data.budgetMax,
       preferredArea: data.preferredArea,
       priority: data.priority as LeadPriority,
-      status: 'new',
+      nextFollowUpDate: data.nextFollowUpDate ? new Date(data.nextFollowUpDate) : undefined,
+      status: 'open',
       initialRemark: data.initialRemark,
       createdBy: new Types.ObjectId(userId),
     });
@@ -270,7 +272,7 @@ export const leadService = {
     });
 
     const activityType =
-      CLOSED_LEAD_STATUSES.includes(newStatus) ? 'LEAD_CLOSED' : 'STATUS_CHANGED';
+      (CLOSED_LEAD_STATUSES as readonly string[]).includes(newStatus) ? 'LEAD_CLOSED' : 'STATUS_CHANGED';
 
     await leadRepository.createActivity({
       leadId: lead._id,
@@ -322,9 +324,10 @@ export const leadService = {
       assignedTo: new Types.ObjectId(data.assignedTo),
       currentAssignmentId: assignment._id,
       assignedAt: now,
-      nextFollowUpDate: undefined,
       updatedBy: new Types.ObjectId(userId),
     });
+    // Clear schedule NFD on transfer — new assignee starts without a prior due date
+    await leadRepository.syncNextFollowUpDate(id, new Types.ObjectId(userId));
 
     await leadRepository.createActivity({
       leadId: lead._id,
@@ -414,12 +417,13 @@ export const leadService = {
       createdBy: new Types.ObjectId(user.userId),
     });
 
-    const updateFields: Partial<ILead> = { updatedBy: new Types.ObjectId(user.userId) };
-    if (data.nextFollowUpDate) {
-      updateFields.nextFollowUpDate = new Date(data.nextFollowUpDate);
-    }
-
-    await leadRepository.update(id, updateFields);
+    // Always mirror the latest follow-up's NFD onto the lead (clear when omitted)
+    // so Due/Today/Tomorrow never keep a past/completed follow-up date.
+    await leadRepository.syncNextFollowUpDate(
+      id,
+      new Types.ObjectId(user.userId),
+      data.nextFollowUpDate ? new Date(data.nextFollowUpDate) : undefined
+    );
 
     const activityTypeMap: Record<string, string> = {
       call: 'CALL_DONE',
@@ -463,9 +467,9 @@ export const leadService = {
       });
 
       const statusMap: Record<string, string> = {
-        property_visit: 'visit_scheduled',
-        site_visit: 'visit_scheduled',
-        revisit: 'revisit_scheduled',
+        property_visit: 'pending',
+        site_visit: 'pending',
+        revisit: 'pending',
       };
       const nextStatus = statusMap[data.type];
       if (nextStatus && lead.status !== nextStatus) {
@@ -597,7 +601,7 @@ export const leadService = {
       closedLost,
     ] = await Promise.all([
       leadRepository.countByFilter(baseFilter),
-      leadRepository.countByFilter({ ...baseFilter, status: 'new' }),
+      leadRepository.countByFilter({ ...baseFilter, status: 'open' }),
       leadRepository.countByFilter({
         ...baseFilter,
         priority: 'hot',
@@ -628,8 +632,8 @@ export const leadService = {
         ...visitLeadFilter,
         scheduledDate: { $lt: startOfDay },
       }),
-      leadRepository.countByFilter({ ...baseFilter, status: 'closed_won' }),
-      leadRepository.countByFilter({ ...baseFilter, status: 'closed_lost' }),
+      leadRepository.countByFilter({ ...baseFilter, status: 'closed' }),
+      leadRepository.countByFilter({ ...baseFilter, status: 'closed' }),
     ]);
 
     return {

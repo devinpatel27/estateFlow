@@ -157,14 +157,9 @@ export const LEAD_PRIORITIES = [
 ] as const;
 
 export const LEAD_STATUSES = [
-  { value: 'new', label: 'New' },
-  { value: 'contacted', label: 'Contacted' },
-  { value: 'follow_up', label: 'Follow-Up' },
-  { value: 'visit_scheduled', label: 'Visit Scheduled' },
-  { value: 'revisit_scheduled', label: 'Re-Visit Scheduled' },
-  { value: 'negotiation', label: 'Negotiation' },
-  { value: 'closed_won', label: 'Closed Won' },
-  { value: 'closed_lost', label: 'Closed Lost' },
+  { value: 'open', label: 'Open' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'closed', label: 'Closed' },
 ] as const;
 
 export const FOLLOW_UP_TYPES = [

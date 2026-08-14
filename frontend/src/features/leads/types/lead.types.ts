@@ -24,6 +24,7 @@ export interface Lead {
   address?: string;
   category: string;
   propertyType: MasterItem | string;
+  propertyConfiguration?: string;
   leadSource: MasterItem | string;
   budgetMin?: number;
   budgetMax?: number;
@@ -89,12 +90,15 @@ export interface LeadListParams {
   category?: string;
   priority?: string;
   propertyType?: string;
+  propertyConfiguration?: string;
   leadSource?: string;
   assignedTo?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   dateFrom?: string;
   dateTo?: string;
+  nfdFrom?: string;
+  nfdTo?: string;
   followUpDue?: 'today' | 'tomorrow' | 'overdue';
 }
 
@@ -107,12 +111,14 @@ export interface CreateLeadData {
   address?: string;
   category: string;
   propertyType: string;
+  propertyConfiguration?: string;
   leadSource: string;
   budgetMin?: number;
   budgetMax?: number;
   preferredArea?: string;
   assignedTo?: string;
   priority: string;
+  nextFollowUpDate?: string;
   initialRemark?: string;
 }
 

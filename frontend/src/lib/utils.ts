@@ -80,8 +80,16 @@ export function downloadBlob(blob: Blob, filename: string): void {
 }
 
 const STATUS_ALIASES: Record<string, string> = {
+  new: 'open',
+  contacted: 'open',
   followup: 'follow_up',
   'follow-up': 'follow_up',
+  follow_up: 'pending',
+  visit_scheduled: 'pending',
+  revisit_scheduled: 'pending',
+  negotiation: 'pending',
+  closed_won: 'closed',
+  closed_lost: 'closed',
 };
 
 const PRIORITY_ALIASES: Record<string, string> = {
@@ -105,10 +113,7 @@ export function normalizeLeadPriority(priority?: string | null): string {
 export function formatLeadStatus(status?: string | null): string {
   if (!status) return 'Unknown';
   const normalized = normalizeLeadStatus(status);
-  const found = [
-    'new', 'contacted', 'follow_up', 'visit_scheduled', 'revisit_scheduled',
-    'negotiation', 'closed_won', 'closed_lost',
-  ].includes(normalized);
+  const found = ['open', 'pending', 'closed'].includes(normalized);
   if (!found) {
     return normalized.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   }

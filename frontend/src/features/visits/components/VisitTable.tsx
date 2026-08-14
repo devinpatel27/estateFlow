@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, MapPin, Star } from 'lucide-react';
-import { DataTable } from '@/components/common/DataTable';
+import { Fragment } from 'react';
+import { ChevronDown, ChevronRight, Eye, Plus, Search, MapPin, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -16,13 +17,56 @@ import { DateRangePicker } from '@/components/common/DateRangePicker';
 import { FilterTabs } from '@/components/common/FilterTabs';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useVisitList } from '../hooks/useVisits';
-import { getVisitColumns, visitRowClassName } from './columns';
 import { VisitDetailDrawer } from './VisitDetailDrawer';
 import { CreateVisitDialog } from './CreateVisitDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useDebounce } from '@/hooks/useDebounce';
 import { PERMISSIONS, VISIT_TYPES, VISIT_STATUSES } from '@/lib/constants';
 import { Visit } from '../types/visit.types';
+import { formatDate, cn } from '@/lib/utils';
+
+type VisitGroup = {
+  leadKey: string;
+  lead: Visit['lead'];
+  visits: Visit[];
+  latestVisit: Visit;
+};
+
+function getTypeLabel(type: string) {
+  return VISIT_TYPES.find((item) => item.value === type)?.label || type.replace(/_/g, ' ');
+}
+
+function getStatusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  if (status === 'completed') return 'default';
+  if (status === 'cancelled') return 'destructive';
+  if (status === 'rescheduled') return 'secondary';
+  return 'outline';
+}
+
+function groupVisitsByLead(visits: Visit[]): VisitGroup[] {
+  const map = new Map<string, VisitGroup>();
+  for (const visit of visits) {
+    const leadKey = visit.lead?._id || visit.leadId || visit._id;
+    const existing = map.get(leadKey);
+    if (!existing) {
+      map.set(leadKey, {
+        leadKey,
+        lead: visit.lead,
+        visits: [visit],
+        latestVisit: visit,
+      });
+      continue;
+    }
+    existing.visits.push(visit);
+    if (new Date(visit.scheduledDate).getTime() > new Date(existing.latestVisit.scheduledDate).getTime()) {
+      existing.latestVisit = visit;
+    }
+  }
+  return [...map.values()].map((group) => ({
+    ...group,
+    visits: group.visits.sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()),
+  }));
+}
 
 export function VisitTable() {
   const { hasPermission, isReady } = usePermissions();
@@ -32,6 +76,7 @@ export function VisitTable() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const debouncedSearch = useDebounce(searchInput, 300);
 
   const canCreate = isReady && hasPermission(PERMISSIONS.VISIT_CREATE);
@@ -51,14 +96,12 @@ export function VisitTable() {
     }
   };
 
-  const columns = getVisitColumns({
-    canFavorite,
-    onToggleFavorite: handleToggleFavorite,
-    onView: (visit) => {
-      setSelectedVisit(visit);
-      setDetailOpen(true);
-    },
-  });
+  const groups = groupVisitsByLead(visits);
+
+  const openVisit = (visit: Visit) => {
+    setSelectedVisit(visit);
+    setDetailOpen(true);
+  };
 
   const toolbar = (
     <div className="w-full min-w-0 space-y-2">
@@ -66,7 +109,7 @@ export function VisitTable() {
         <div className="relative min-w-0">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search customer, mobile, lead ID..."
+            placeholder="Search customer, mobile, lead ID, employee, remark..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="crm-toolbar-input w-full pl-9 text-sm"
@@ -140,31 +183,140 @@ export function VisitTable() {
 
   return (
     <>
-      <DataTable
-        columns={columns}
-        data={visits}
-        totalCount={totalCount}
-        pageIndex={(params.page ?? 1) - 1}
-        pageSize={params.limit ?? 10}
-        pageCount={pageCount}
-        onPageChange={(p) => updateParams({ page: p + 1 })}
-        onPageSizeChange={(s) => updateParams({ limit: s, page: 1 })}
-        isLoading={isLoading}
-        toolbar={toolbar}
-        toolbarActions={toolbarActions}
-        getRowClassName={visitRowClassName}
-        emptyState={
-          <EmptyState
-            icon={MapPin}
-            title="No visits found"
-            description={
-              canViewAllVisits
-                ? 'Schedule a visit or add a visit-type follow-up on a lead.'
-                : 'No visits for your assigned leads yet.'
-            }
-          />
-        }
-      />
+      <div className="space-y-3">
+        <div className="crm-table-toolbar flex flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">{toolbar}</div>
+          <div className="flex shrink-0 items-center gap-2">{toolbarActions}</div>
+        </div>
+        <div className="crm-table-wrap overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted/40 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <th className="h-11 px-3">Lead / Customer</th>
+                <th className="h-11 px-3">Visits</th>
+                <th className="h-11 px-3">Latest Schedule</th>
+                <th className="h-11 px-3">Status</th>
+                <th className="h-11 px-3">Assigned</th>
+                <th className="h-11 px-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading && groups.length === 0 ? (
+                Array.from({ length: params.limit ?? 10 }).map((_, index) => (
+                  <tr key={index} className="border-t border-border/60">
+                    {Array.from({ length: 6 }).map((__, cellIndex) => (
+                      <td key={cellIndex} className="h-12 px-3">
+                        <div className="h-4 rounded bg-muted animate-pulse" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : groups.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="h-48 p-0">
+                    <EmptyState
+                      icon={MapPin}
+                      title="No visits found"
+                      description={
+                        canViewAllVisits
+                          ? 'Schedule a visit or add a visit-type follow-up on a lead.'
+                          : 'No visits for your assigned leads yet.'
+                      }
+                    />
+                  </td>
+                </tr>
+              ) : (
+                groups.map((group) => {
+                  const expanded = Boolean(openGroups[group.leadKey]);
+                  const favorite = group.visits.some((visit) => visit.isFavorite);
+                  return (
+                    <Fragment key={group.leadKey}>
+                      <tr
+                        key={group.leadKey}
+                        className={cn(
+                          'border-t border-border/60 transition-colors hover:bg-muted/30',
+                          favorite && 'bg-amber-500/10'
+                        )}
+                      >
+                        <td className="h-14 px-3">
+                          <button
+                            type="button"
+                            className="flex items-center gap-2 text-left"
+                            onClick={() => setOpenGroups((prev) => ({ ...prev, [group.leadKey]: !expanded }))}
+                          >
+                            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            <div>
+                              <p className="font-medium">{group.lead?.customerName || 'Unknown lead'}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {group.lead?.leadId || '-'} · {group.lead?.mobile || '-'}
+                              </p>
+                            </div>
+                          </button>
+                        </td>
+                        <td className="px-3">
+                          <div className="flex flex-wrap gap-1.5">
+                            <Badge variant="outline" className="text-[11px]">{group.visits.length} total</Badge>
+                            {group.visits.some((visit) => visit.type === 'revisit') && (
+                              <Badge variant="secondary" className="text-[11px]">Revisit</Badge>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 text-xs">
+                          <p className="font-medium">{formatDate(group.latestVisit.scheduledDate)}</p>
+                          {group.latestVisit.scheduledTime && <p className="text-muted-foreground">{group.latestVisit.scheduledTime}</p>}
+                        </td>
+                        <td className="px-3">
+                          <Badge variant={getStatusVariant(group.latestVisit.status)} className="text-[11px] capitalize">
+                            {group.latestVisit.status}
+                          </Badge>
+                        </td>
+                        <td className="px-3 text-xs">{group.lead?.assignedTo?.name || 'Unassigned'}</td>
+                        <td className="px-3 text-right">
+                          <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5" onClick={() => openVisit(group.latestVisit)}>
+                            <Eye className="h-3.5 w-3.5" />
+                            Latest
+                          </Button>
+                        </td>
+                      </tr>
+                      {expanded && group.visits.map((visit) => (
+                        <tr key={visit._id} className="border-t border-border/40 bg-muted/15">
+                          <td className="px-10 py-2 text-xs text-muted-foreground">{visit.remark || 'No remark'}</td>
+                          <td className="px-3 py-2"><Badge variant="outline" className="text-[10px]">{getTypeLabel(visit.type)}</Badge></td>
+                          <td className="px-3 py-2 text-xs">{formatDate(visit.scheduledDate)} {visit.scheduledTime || ''}</td>
+                          <td className="px-3 py-2"><Badge variant={getStatusVariant(visit.status)} className="text-[10px] capitalize">{visit.status}</Badge></td>
+                          <td className="px-3 py-2 text-xs">{visit.source === 'follow_up' ? 'Follow-up' : 'Manual'}</td>
+                          <td className="px-3 py-2 text-right">
+                            <div className="inline-flex items-center gap-1">
+                              {canFavorite && (
+                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleToggleFavorite(visit)}>
+                                  <Star className={cn('h-3.5 w-3.5', visit.isFavorite ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/50')} />
+                                </Button>
+                              )}
+                              <Button type="button" variant="ghost" size="sm" className="h-7" onClick={() => openVisit(visit)}>View</Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex flex-col items-center justify-between gap-3 text-sm sm:flex-row">
+          <div className="text-muted-foreground">
+            Showing <span className="font-medium text-foreground">{totalCount === 0 ? 0 : ((params.page ?? 1) - 1) * (params.limit ?? 10) + 1}</span> to{' '}
+            <span className="font-medium text-foreground">{Math.min((params.page ?? 1) * (params.limit ?? 10), totalCount)}</span> of{' '}
+            <span className="font-medium text-foreground">{totalCount}</span> visits
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled={(params.page ?? 1) <= 1} onClick={() => updateParams({ page: (params.page ?? 1) - 1 })}>Previous</Button>
+            <span className="text-xs font-medium">{params.page ?? 1} / {Math.max(1, pageCount)}</span>
+            <Button variant="outline" size="sm" disabled={(params.page ?? 1) >= pageCount} onClick={() => updateParams({ page: (params.page ?? 1) + 1 })}>Next</Button>
+          </div>
+        </div>
+      </div>
 
       <VisitDetailDrawer
         visit={selectedVisit}
