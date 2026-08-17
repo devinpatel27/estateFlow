@@ -42,6 +42,27 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
+function shouldIgnoreRowClick(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return Boolean(
+    target.closest(
+      [
+        '[role="dialog"]',
+        '[data-row-click-ignore]',
+        'button',
+        'a',
+        'input',
+        'textarea',
+        'select',
+        '[role="button"]',
+        '[role="tab"]',
+        '[role="combobox"]',
+        '[data-radix-popper-content-wrapper]',
+      ].join(',')
+    )
+  );
+}
+
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -232,7 +253,10 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  onClick={() => onRowClick?.(row.original)}
+                  onClick={(event) => {
+                    if (shouldIgnoreRowClick(event.target)) return;
+                    onRowClick?.(row.original);
+                  }}
                   className={cn(
                     'transition-colors',
                     onRowClick && 'cursor-pointer',

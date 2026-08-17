@@ -36,7 +36,10 @@ export function ModalShell({
           'crm-dialog flex max-h-[92vh] flex-col gap-0 p-0',
           maxWidth
         )}
+        data-row-click-ignore
         hideCloseButton
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
         onInteractOutside={(e) => {
           const target = e.target as HTMLElement;
           if (target.closest('[data-datepicker-popover]')) {
