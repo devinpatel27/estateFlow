@@ -127,7 +127,7 @@ export function FollowUpForm({ open, onOpenChange, onSubmit }: FollowUpFormProps
       title="Add Follow-Up"
       description="Record a follow-up activity for this lead"
       icon={CalendarPlus}
-      maxWidth="sm:max-w-xl"
+      maxWidth="sm:max-w-2xl"
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">

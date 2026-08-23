@@ -72,7 +72,7 @@ export function ModalShell({
             onClick={() => onOpenChange(false)}
           />
         </div>
-        <div className="flex min-h-0 flex-1 flex-col px-6 py-5">{children}</div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-5">{children}</div>
       </DialogContent>
     </Dialog>
   );
