@@ -447,6 +447,8 @@ export const leadRepository = {
     }
     return LeadFollowUpModel.find(query)
       .populate('createdBy', 'name employeeId')
+      .populate('parentActivity', 'name slug status')
+      .populate('childActivity', 'name slug status parent')
       .sort({ followUpDate: -1, createdAt: -1 })
       .lean();
   },

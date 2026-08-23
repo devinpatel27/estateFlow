@@ -10,7 +10,7 @@ import { employeeRoutes } from '../features/employees/employee.routes';
 import { roleRoutes } from '../features/roles/role.routes';
 import { dashboardRoutes } from '../features/dashboard/dashboard.routes';
 import { leadRoutes } from '../features/leads/lead.routes';
-import { propertyTypeRoutes, leadSourceRoutes } from '../features/masters/master.routes';
+import { propertyTypeRoutes, leadSourceRoutes, followUpActivityRoutes } from '../features/masters/master.routes';
 import { visitRoutes } from '../features/visits/visit.routes';
 import { propertyRoutes } from '../features/properties/property.routes';
 import { amenityRoutes } from '../features/amenities/amenity.routes';
@@ -52,6 +52,7 @@ export const createApp = (): Application => {
   app.use('/api/leads', leadRoutes);
   app.use('/api/property-types', propertyTypeRoutes);
   app.use('/api/lead-sources', leadSourceRoutes);
+  app.use('/api/follow-up-activities', followUpActivityRoutes);
   app.use('/api/visits', visitRoutes);
   app.use('/api/properties', propertyRoutes);
   app.use('/api/property-amenities', amenityRoutes);

@@ -15,6 +15,7 @@ const crumbLabels: Record<string, string> = {
   settings: 'Settings',
   'property-types': 'Property Types',
   'lead-sources': 'Lead Sources',
+  'follow-up-activities': 'Follow-up Activities',
   profile: 'My Profile',
   'change-password': 'Change Password',
 };

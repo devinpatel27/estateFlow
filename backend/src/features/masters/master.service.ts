@@ -1,6 +1,11 @@
 import { masterRepository } from './master.repository';
 import { AppError } from '../../middleware/error.middleware';
-import { CreateMasterInput, UpdateMasterInput } from './master.validator';
+import {
+  CreateFollowUpActivityInput,
+  CreateMasterInput,
+  UpdateFollowUpActivityInput,
+  UpdateMasterInput,
+} from './master.validator';
 
 export const masterService = {
   listPropertyTypes: async (activeOnly = false) =>
@@ -47,5 +52,28 @@ export const masterService = {
   deleteLeadSource: async (id: string) => {
     const item = await masterRepository.deleteLeadSource(id);
     if (!item) throw new AppError('Lead source not found', 404);
+  },
+
+  listFollowUpActivities: async (activeOnly = false) =>
+    masterRepository.findAllFollowUpActivities(activeOnly),
+
+  getFollowUpActivity: async (id: string) => {
+    const item = await masterRepository.findFollowUpActivityById(id);
+    if (!item) throw new AppError('Follow-up activity not found', 404);
+    return item;
+  },
+
+  createFollowUpActivity: async (data: CreateFollowUpActivityInput) =>
+    masterRepository.createFollowUpActivity({ ...data, parent: data.parent || undefined }),
+
+  updateFollowUpActivity: async (id: string, data: UpdateFollowUpActivityInput) => {
+    const item = await masterRepository.updateFollowUpActivity(id, data);
+    if (!item) throw new AppError('Follow-up activity not found', 404);
+    return item;
+  },
+
+  deleteFollowUpActivity: async (id: string) => {
+    const item = await masterRepository.deleteFollowUpActivity(id);
+    if (!item) throw new AppError('Follow-up activity not found', 404);
   },
 };

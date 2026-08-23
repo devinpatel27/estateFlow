@@ -1,6 +1,6 @@
 import api from '@/lib/axios';
 import { ApiResponse } from '@/types/api.types';
-import { MasterItem } from '../types/lead.types';
+import { FollowUpActivity, MasterItem } from '../types/lead.types';
 
 export const masterService = {
   listPropertyTypes: async (activeOnly = false): Promise<ApiResponse<MasterItem[]>> => {
@@ -40,6 +40,26 @@ export const masterService = {
 
   deleteLeadSource: async (id: string): Promise<ApiResponse> => {
     const res = await api.delete(`/lead-sources/${id}`);
+    return res.data;
+  },
+
+  listFollowUpActivities: async (activeOnly = false): Promise<ApiResponse<FollowUpActivity[]>> => {
+    const res = await api.get('/follow-up-activities', { params: activeOnly ? { active: 'true' } : {} });
+    return res.data;
+  },
+
+  createFollowUpActivity: async (data: { name: string; parent?: string; status?: string }): Promise<ApiResponse<FollowUpActivity>> => {
+    const res = await api.post('/follow-up-activities', data);
+    return res.data;
+  },
+
+  updateFollowUpActivity: async (id: string, data: Partial<FollowUpActivity>): Promise<ApiResponse<FollowUpActivity>> => {
+    const res = await api.put(`/follow-up-activities/${id}`, data);
+    return res.data;
+  },
+
+  deleteFollowUpActivity: async (id: string): Promise<ApiResponse> => {
+    const res = await api.delete(`/follow-up-activities/${id}`);
     return res.data;
   },
 };

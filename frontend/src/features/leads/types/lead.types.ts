@@ -6,6 +6,11 @@ export interface MasterItem {
   sortOrder: number;
 }
 
+export interface FollowUpActivity extends MasterItem {
+  parent?: string | MasterItem;
+  children?: FollowUpActivity[];
+}
+
 export interface LeadUser {
   _id: string;
   name: string;
@@ -56,6 +61,9 @@ export interface LeadFollowUp {
   followUpDate: string;
   followUpTime?: string;
   type: string;
+  priority?: 'hot' | 'warm' | 'cold';
+  parentActivity?: FollowUpActivity | string;
+  childActivity?: FollowUpActivity | string;
   remark?: string;
   nextFollowUpDate?: string;
   createdBy: LeadUser;

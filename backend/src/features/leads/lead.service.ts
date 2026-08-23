@@ -36,6 +36,7 @@ import {
 } from './lead.validator';
 import { ILead } from '../../models/Lead.model';
 import { LeadFollowUpModel } from '../../models/LeadFollowUp.model';
+import { FollowUpActivityModel } from '../../models/FollowUpActivity.model';
 import { visitService } from '../visits/visit.service';
 import { FOLLOW_UP_VISIT_TYPES } from '../../constants/visit.constants';
 import { sendLeadThankYouEmail } from '../../utils/email.utils';
@@ -405,6 +406,12 @@ export const leadService = {
     }
 
     const priorFollowUpCount = await LeadFollowUpModel.countDocuments({ leadId: lead._id });
+    const parentActivityId = data.parentActivity && toObjectId(data.parentActivity);
+    const childActivityId = data.childActivity && toObjectId(data.childActivity);
+    const [parentActivity, childActivity] = await Promise.all([
+      parentActivityId ? FollowUpActivityModel.findById(parentActivityId).select('name').lean() : null,
+      childActivityId ? FollowUpActivityModel.findById(childActivityId).select('name').lean() : null,
+    ]);
 
     const followUp = await leadRepository.createFollowUp({
       leadId: lead._id,
@@ -412,6 +419,9 @@ export const leadService = {
       followUpDate: new Date(data.followUpDate),
       followUpTime: data.followUpTime,
       type: data.type,
+      priority: data.priority,
+      parentActivity: parentActivityId || undefined,
+      childActivity: childActivityId || undefined,
       remark: data.remark,
       nextFollowUpDate: data.nextFollowUpDate ? new Date(data.nextFollowUpDate) : undefined,
       createdBy: new Types.ObjectId(user.userId),
@@ -425,6 +435,13 @@ export const leadService = {
       data.nextFollowUpDate ? new Date(data.nextFollowUpDate) : undefined
     );
 
+    if (data.priority && lead.priority !== data.priority) {
+      await leadRepository.update(id, {
+        priority: data.priority as LeadPriority,
+        updatedBy: new Types.ObjectId(user.userId),
+      });
+    }
+
     const activityTypeMap: Record<string, string> = {
       call: 'CALL_DONE',
       property_visit: 'VISIT_SCHEDULED',
@@ -436,10 +453,15 @@ export const leadService = {
       leadId: lead._id,
       assignmentId: lead.currentAssignmentId,
       type: (activityTypeMap[data.type] || 'FOLLOW_UP_ADDED') as 'FOLLOW_UP_ADDED',
-      title: `Follow-up: ${data.type.replace(/_/g, ' ')}`,
+      title: `Follow-up: ${(childActivity?.name || parentActivity?.name || data.type).replace(/_/g, ' ')}`,
       remark: data.remark,
       performedBy: new Types.ObjectId(user.userId),
-      metadata: { followUpId: followUp._id },
+      metadata: {
+        followUpId: followUp._id,
+        priority: data.priority,
+        parentActivity: parentActivity?.name,
+        childActivity: childActivity?.name,
+      },
     });
 
     await logActivity({

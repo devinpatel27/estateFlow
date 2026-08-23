@@ -15,7 +15,10 @@ function buildFollowUpPayload(data: FollowUpFormValues): Record<string, string> 
   const payload: Record<string, string> = {
     followUpDate: data.followUpDate,
     type: data.type,
+    priority: data.priority,
   };
+  if (data.parentActivity?.trim()) payload.parentActivity = data.parentActivity.trim();
+  if (data.childActivity?.trim()) payload.childActivity = data.childActivity.trim();
   if (data.remark?.trim()) payload.remark = data.remark.trim();
   if (data.nextFollowUpDate?.trim()) payload.nextFollowUpDate = data.nextFollowUpDate.trim();
   return payload;

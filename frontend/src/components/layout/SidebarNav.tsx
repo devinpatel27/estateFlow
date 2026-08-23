@@ -167,6 +167,12 @@ const settingsAccordions: SettingsAccordion[] = [
         icon: Radio,
         permission: PERMISSIONS.LEAD_MASTER_MANAGE,
       },
+      {
+        label: 'Follow-up Activities',
+        href: '/settings/follow-up-activities',
+        icon: Radio,
+        permission: PERMISSIONS.LEAD_MASTER_MANAGE,
+      },
     ],
   },
 ];

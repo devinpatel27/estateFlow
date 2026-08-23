@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import { PropertyTypeModel } from '../models/PropertyType.model';
 import { PropertyAmenityModel } from '../models/PropertyAmenity.model';
 import { LeadSourceModel } from '../models/LeadSource.model';
+import { FollowUpActivityModel } from '../models/FollowUpActivity.model';
 import { SystemSettingsModel } from '../models/SystemSettings.model';
 import { LeadModel } from '../models/Lead.model';
 import { PropertyModel } from '../models/Property.model';
@@ -56,6 +57,39 @@ const LEAD_SOURCES = [
   'Walk-In',
   'Existing Customer',
   'Other',
+];
+
+const FOLLOW_UP_ACTIVITIES = [
+  {
+    name: 'Phone Call',
+    children: [
+      'Already Purchased',
+      'CNR / CC / Switched off',
+      'Call back request',
+      'Closed',
+      'Deal Related Discussion',
+      'Details send',
+      'Non Service Area',
+      'Not interested',
+      'On Hold',
+      'Option suggested',
+      'Repeat Inquiry',
+      'Requirement Understand',
+      'Site Visit schedule',
+    ],
+  },
+  {
+    name: 'Visit',
+    children: ['Visit Done', 'Site Visit schedule', 'Repeat Inquiry'],
+  },
+  {
+    name: 'Meeting',
+    children: ['Meeting Done', 'Deal Related Discussion', 'Requirement Understand'],
+  },
+  {
+    name: 'Deal',
+    children: ['Deal Done', 'Closed', 'Negotiation', 'On Hold'],
+  },
 ];
 
 const toSlug = (name: string): string =>
@@ -215,6 +249,27 @@ export const seedMasters = async (): Promise<void> => {
       );
     }
     console.log(`✅ Lead sources seeded (${LEAD_SOURCES.length})`);
+
+    for (let i = 0; i < FOLLOW_UP_ACTIVITIES.length; i++) {
+      const parent = FOLLOW_UP_ACTIVITIES[i];
+      const slug = toSlug(parent.name);
+      const parentDoc = await FollowUpActivityModel.findOneAndUpdate(
+        { slug, parent: { $exists: false } },
+        { name: parent.name, slug, status: 'active', sortOrder: i + 1 },
+        { upsert: true, new: true }
+      );
+
+      for (let j = 0; j < parent.children.length; j++) {
+        const name = parent.children[j];
+        const childSlug = toSlug(name);
+        await FollowUpActivityModel.findOneAndUpdate(
+          { slug: childSlug, parent: parentDoc._id },
+          { name, slug: childSlug, parent: parentDoc._id, status: 'active', sortOrder: j + 1 },
+          { upsert: true, new: true }
+        );
+      }
+    }
+    console.log(`✅ Follow-up activities seeded (${FOLLOW_UP_ACTIVITIES.length})`);
 
     for (let i = 0; i < PROPERTY_AMENITIES.length; i++) {
       const name = PROPERTY_AMENITIES[i];

@@ -52,6 +52,9 @@ export const updateLeadSchema = budgetRangeRefine(
 export const followUpSchema = z.object({
   followUpDate: z.string().min(1, 'Follow-up date is required'),
   type: z.enum(['call', 'whatsapp', 'meeting', 'property_visit', 'revisit', 'site_visit', 'email', 'negotiation']),
+  priority: z.enum(['hot', 'warm', 'cold']).default('warm'),
+  parentActivity: z.string().optional(),
+  childActivity: z.string().optional(),
   remark: z.string().optional(),
   nextFollowUpDate: z.string().optional(),
 });

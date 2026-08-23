@@ -97,3 +97,51 @@ export const leadSourceController = {
     }
   },
 };
+
+export const followUpActivityController = {
+  list: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const activeOnly = req.query.active === 'true';
+      const data = await masterService.listFollowUpActivities(activeOnly);
+      sendSuccess(res, 'Follow-up activities retrieved successfully', data);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getById: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = await masterService.getFollowUpActivity(req.params.id);
+      sendSuccess(res, 'Follow-up activity retrieved successfully', data);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  create: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = await masterService.createFollowUpActivity(req.body);
+      sendCreated(res, 'Follow-up activity created successfully', data);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  update: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = await masterService.updateFollowUpActivity(req.params.id, req.body);
+      sendSuccess(res, 'Follow-up activity updated successfully', data);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  delete: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await masterService.deleteFollowUpActivity(req.params.id);
+      sendSuccess(res, 'Follow-up activity deleted successfully');
+    } catch (error) {
+      next(error);
+    }
+  },
+};
