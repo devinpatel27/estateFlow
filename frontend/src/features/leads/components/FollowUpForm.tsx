@@ -131,15 +131,6 @@ export function FollowUpForm({ open, onOpenChange, onSubmit }: FollowUpFormProps
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <FormField control={form.control} name="followUpDate" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Follow-up Date <span className="text-destructive">*</span></FormLabel>
-              <FormControl>
-                <DatePicker value={field.value} onChange={field.onChange} placeholder="Select follow-up date" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
           <FormField control={form.control} name="priority" render={({ field }) => (
             <FormItem>
               <FormLabel>Lead Status <span className="text-destructive">*</span></FormLabel>
@@ -239,15 +230,26 @@ export function FollowUpForm({ open, onOpenChange, onSubmit }: FollowUpFormProps
               <FormMessage />
             </FormItem>
           )} />
-          <FormField control={form.control} name="nextFollowUpDate" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Next Follow-up Date</FormLabel>
-              <FormControl>
-                <DatePicker value={field.value} onChange={field.onChange} placeholder="Select next follow-up date" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField control={form.control} name="followUpDate" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Follow-up Date <span className="text-destructive">*</span></FormLabel>
+                <FormControl>
+                  <DatePicker value={field.value} onChange={field.onChange} placeholder="Select follow-up date" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="nextFollowUpDate" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Next Follow-up Date</FormLabel>
+                <FormControl>
+                  <DatePicker value={field.value} onChange={field.onChange} placeholder="Select next follow-up date" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
           <div className="flex gap-2 pt-2">
             <Button type="submit" className="crm-btn-primary crm-btn-interactive flex-1 gap-2" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
