@@ -80,6 +80,29 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
   const rows = useMemo(() => {
     if (!lead) return [];
     const hasLeadCreatedActivity = activities.some((activity) => activity.type === 'LEAD_CREATED');
+    const nonFollowUpActivities = activities.filter((a) => {
+      if ((a as { metadata?: { followUpId?: string } }).metadata?.followUpId) return false;
+      if (a.type === 'FOLLOW_UP_ADDED') return false;
+      if (['CALL_DONE', 'REVISIT_COMPLETED', 'NEGOTIATION_STARTED'].includes(a.type)) return false;
+      if (a.title?.startsWith('Follow-up:')) return false;
+      return true;
+    });
+
+    const followUpItems = followUps.map((f) => {
+      const parentName = typeof f.parentActivity === 'object' && f.parentActivity ? f.parentActivity.name : '';
+      const childName = typeof f.childActivity === 'object' && f.childActivity ? f.childActivity.name : '';
+      const activityLabel = childName || parentName || f.type.replace(/_/g, ' ');
+      return {
+        id: f._id,
+        kind: 'followup' as const,
+        date: f.createdAt || f.followUpDate,
+        type: activityLabel,
+        remark: f.remark,
+        nextFollowUp: f.nextFollowUpDate,
+        by: f.createdBy?.name,
+      };
+    });
+
     const items: ProcessRow[] = [
       ...(lead.initialRemark && !hasLeadCreatedActivity
         ? [{
@@ -92,7 +115,7 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
             by: lead.createdBy?.name,
           }]
         : []),
-      ...activities.map((a) => ({
+      ...nonFollowUpActivities.map((a) => ({
         id: a._id,
         kind: 'activity' as const,
         date: a.createdAt,
@@ -100,15 +123,7 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
         remark: a.remark,
         by: a.performedBy?.name,
       })),
-      ...followUps.map((f) => ({
-        id: f._id,
-        kind: 'followup' as const,
-        date: f.followUpDate || f.createdAt,
-        type: f.type.replace(/_/g, ' '),
-        remark: f.remark,
-        nextFollowUp: f.nextFollowUpDate,
-        by: f.createdBy?.name,
-      })),
+      ...followUpItems,
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return items.filter((item) => {

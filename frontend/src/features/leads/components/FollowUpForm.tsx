@@ -87,12 +87,21 @@ export function FollowUpForm({ open, onOpenChange, onSubmit }: FollowUpFormProps
 
   useEffect(() => {
     if (!open) return;
+    form.reset({
+      followUpDate: new Date().toISOString().split('T')[0],
+      type: 'call',
+      priority: 'warm',
+      parentActivity: '',
+      childActivity: '',
+      remark: '',
+      nextFollowUpDate: '',
+    });
     masterService.listFollowUpActivities(true)
       .then((res) => {
         const next = res.data?.length ? res.data : fallbackActivities;
         setActivities(next);
         const first = next[0];
-        if (!form.getValues('parentActivity') && first) {
+        if (first) {
           form.setValue('parentActivity', first._id);
           form.setValue('type', inferFollowUpType(first.name));
           setExpandedParent(first._id);

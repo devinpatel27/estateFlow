@@ -160,7 +160,10 @@ async function attachLastFollowUps<T extends Record<string, unknown>>(
 
     return leads.map((lead) => {
       const extra = remarkMap.get(String(lead._id));
-      return extra ? { ...lead, ...extra } : lead;
+      const remark = extra?.lastFollowUpRemark || (lead as Record<string, unknown>).initialRemark as string | undefined;
+      return extra
+        ? { ...lead, ...extra, lastFollowUpRemark: remark }
+        : { ...lead, lastFollowUpRemark: remark };
     });
   }
 
@@ -188,7 +191,10 @@ async function attachLastFollowUps<T extends Record<string, unknown>>(
 
   return leads.map((lead) => {
     const extra = remarkMap.get(String(lead._id));
-    return extra ? { ...lead, ...extra } : lead;
+    const remark = extra?.lastFollowUpRemark || (lead as Record<string, unknown>).initialRemark as string | undefined;
+    return extra
+      ? { ...lead, ...extra, lastFollowUpRemark: remark }
+      : { ...lead, lastFollowUpRemark: remark };
   });
 }
 
