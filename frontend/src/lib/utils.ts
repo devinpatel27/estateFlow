@@ -1,4 +1,4 @@
-import { type ClassValue, clsx } from 'clsx';
+﻿import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format } from 'date-fns';
 
@@ -82,14 +82,22 @@ export function downloadBlob(blob: Blob, filename: string): void {
 const STATUS_ALIASES: Record<string, string> = {
   new: 'open',
   contacted: 'open',
+  open: 'open',
+  hold: 'hold',
+  on_hold: 'hold',
+  'on-hold': 'hold',
+  booked: 'booked',
+  book: 'booked',
   followup: 'follow_up',
   'follow-up': 'follow_up',
   follow_up: 'pending',
   visit_scheduled: 'pending',
   revisit_scheduled: 'pending',
   negotiation: 'pending',
-  closed_won: 'closed',
+  closed_won: 'booked',
   closed_lost: 'closed',
+  closed: 'closed',
+  close: 'closed',
 };
 
 const PRIORITY_ALIASES: Record<string, string> = {
@@ -113,7 +121,7 @@ export function normalizeLeadPriority(priority?: string | null): string {
 export function formatLeadStatus(status?: string | null): string {
   if (!status) return 'Unknown';
   const normalized = normalizeLeadStatus(status);
-  const found = ['open', 'pending', 'closed'].includes(normalized);
+  const found = ['open', 'hold', 'pending', 'booked', 'closed'].includes(normalized);
   if (!found) {
     return normalized.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   }

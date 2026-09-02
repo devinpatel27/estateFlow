@@ -31,6 +31,7 @@ interface FollowUpFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: FollowUpFormValues) => Promise<void>;
+  initialStatus?: string;
 }
 
 const followUpTypeIcons: Record<string, React.ElementType> = {
@@ -56,6 +57,13 @@ const priorities = [
   { value: 'cold', label: 'Cold', icon: Snowflake, className: 'data-[active=true]:border-sky-500 data-[active=true]:bg-sky-500 data-[active=true]:text-white' },
 ] as const;
 
+const leadStatusOptions = [
+  { value: 'open', label: 'Open', className: 'data-[active=true]:border-emerald-500 data-[active=true]:bg-emerald-500 data-[active=true]:text-white' },
+  { value: 'hold', label: 'Hold', className: 'data-[active=true]:border-amber-500 data-[active=true]:bg-amber-500 data-[active=true]:text-white' },
+  { value: 'booked', label: 'Booked', className: 'data-[active=true]:border-indigo-500 data-[active=true]:bg-indigo-500 data-[active=true]:text-white' },
+  { value: 'closed', label: 'Closed', className: 'data-[active=true]:border-rose-500 data-[active=true]:bg-rose-500 data-[active=true]:text-white' },
+] as const;
+
 function inferFollowUpType(parentName = '', childName = ''): FollowUpFormValues['type'] {
   const text = `${parentName} ${childName}`.toLowerCase();
   if (text.includes('whatsapp')) return 'whatsapp';
@@ -67,15 +75,20 @@ function inferFollowUpType(parentName = '', childName = ''): FollowUpFormValues[
   return 'call';
 }
 
-export function FollowUpForm({ open, onOpenChange, onSubmit }: FollowUpFormProps) {
+export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus }: FollowUpFormProps) {
   const [activities, setActivities] = useState<FollowUpActivity[]>(fallbackActivities);
   const [expandedParent, setExpandedParent] = useState('');
+  const normalizedInitialStatus = (initialStatus && ['open', 'hold', 'pending', 'booked', 'closed'].includes(initialStatus)
+    ? initialStatus
+    : 'open') as FollowUpFormValues['status'];
+
   const form = useForm<FollowUpFormValues>({
     resolver: zodResolver(followUpSchema),
     defaultValues: {
       followUpDate: new Date().toISOString().split('T')[0],
       type: 'call',
       priority: 'warm',
+      status: normalizedInitialStatus || 'open',
       parentActivity: '',
       childActivity: '',
       remark: '',
@@ -84,13 +97,19 @@ export function FollowUpForm({ open, onOpenChange, onSubmit }: FollowUpFormProps
   });
   const parentActivity = form.watch('parentActivity');
   const childActivity = form.watch('childActivity');
+  const selectedStatus = form.watch('status');
 
   useEffect(() => {
     if (!open) return;
+    const defaultStatus = (initialStatus && ['open', 'hold', 'pending', 'booked', 'closed'].includes(initialStatus)
+      ? initialStatus
+      : 'open') as FollowUpFormValues['status'];
+
     form.reset({
       followUpDate: new Date().toISOString().split('T')[0],
       type: 'call',
       priority: 'warm',
+      status: defaultStatus || 'open',
       parentActivity: '',
       childActivity: '',
       remark: '',
@@ -108,7 +127,7 @@ export function FollowUpForm({ open, onOpenChange, onSubmit }: FollowUpFormProps
         }
       })
       .catch(() => setActivities(fallbackActivities));
-  }, [form, open]);
+  }, [form, open, initialStatus]);
 
   const selectedParent = useMemo(
     () => activities.find((activity) => activity._id === parentActivity),
@@ -121,6 +140,7 @@ export function FollowUpForm({ open, onOpenChange, onSubmit }: FollowUpFormProps
       followUpDate: new Date().toISOString().split('T')[0],
       type: 'call',
       priority: 'warm',
+      status: normalizedInitialStatus || 'open',
       parentActivity: '',
       childActivity: '',
       remark: '',
@@ -140,38 +160,77 @@ export function FollowUpForm({ open, onOpenChange, onSubmit }: FollowUpFormProps
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <FormField control={form.control} name="priority" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Lead Status <span className="text-destructive">*</span></FormLabel>
-              <FormControl>
-                <div role="radiogroup" aria-label="Lead status" className="grid grid-cols-3 gap-2">
-                  {priorities.map((priority) => {
-                    const Icon = priority.icon;
-                    const active = field.value === priority.value;
-                    return (
-                      <button
-                        key={priority.value}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        data-active={active}
-                        onClick={() => field.onChange(priority.value)}
-                        className={cn(
-                          'flex h-11 items-center justify-center gap-2 rounded-xl border bg-background text-sm font-semibold text-muted-foreground transition-all hover:bg-muted/60',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35',
-                          priority.className
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span>{priority.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField control={form.control} name="priority" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Lead Priority <span className="text-destructive">*</span></FormLabel>
+                <FormControl>
+                  <div role="radiogroup" aria-label="Lead priority" className="grid grid-cols-3 gap-2">
+                    {priorities.map((priority) => {
+                      const Icon = priority.icon;
+                      const active = field.value === priority.value;
+                      return (
+                        <button
+                          key={priority.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          data-active={active}
+                          onClick={() => field.onChange(priority.value)}
+                          className={cn(
+                            'flex h-10 items-center justify-center gap-1.5 rounded-xl border bg-background text-xs font-semibold text-muted-foreground transition-all hover:bg-muted/60',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35',
+                            priority.className
+                          )}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                          <span>{priority.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="status" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Lead Status <span className="text-destructive">*</span></FormLabel>
+                <FormControl>
+                  <div role="radiogroup" aria-label="Lead status" className="grid grid-cols-4 gap-1.5">
+                    {leadStatusOptions.map((opt) => {
+                      const active = field.value === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          data-active={active}
+                          onClick={() => field.onChange(opt.value)}
+                          className={cn(
+                            'flex h-10 items-center justify-center rounded-xl border bg-background text-xs font-semibold text-muted-foreground transition-all hover:bg-muted/60',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35',
+                            opt.className
+                          )}
+                        >
+                          <span>{opt.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
+
+          {(selectedStatus === 'closed' || selectedStatus === 'booked') && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+              <span className="font-semibold">Notice:</span> Setting status to <strong>{selectedStatus === 'booked' ? 'Booked' : 'Closed'}</strong> will lock this lead. Regular users will not be able to edit or add further follow-ups unless reopened by an Admin.
+            </div>
+          )}
           <FormField control={form.control} name="parentActivity" render={({ field }) => (
             <FormItem>
               <FormLabel>Activity <span className="text-destructive">*</span></FormLabel>

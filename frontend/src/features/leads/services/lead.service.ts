@@ -1,4 +1,4 @@
-import api from '@/lib/axios';
+﻿import api from '@/lib/axios';
 import { ApiResponse, PaginatedResponse } from '@/types/api.types';
 import {
   Lead,
@@ -17,6 +17,7 @@ function buildFollowUpPayload(data: FollowUpFormValues): Record<string, string> 
     type: data.type,
     priority: data.priority,
   };
+  if (data.status) payload.status = data.status;
   if (data.parentActivity?.trim()) payload.parentActivity = data.parentActivity.trim();
   if (data.childActivity?.trim()) payload.childActivity = data.childActivity.trim();
   if (data.remark?.trim()) payload.remark = data.remark.trim();

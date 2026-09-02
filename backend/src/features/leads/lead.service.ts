@@ -181,11 +181,18 @@ export const leadService = {
   update: async (
     id: string,
     data: UpdateLeadInput,
-    userId: string,
+    user: JwtPayload | string,
     ipAddress?: string
   ) => {
     const lead = await leadRepository.findById(id);
     if (!lead) throw new AppError('Lead not found', 404);
+
+    const userId = typeof user === 'string' ? user : user.userId;
+    const permissions = typeof user === 'string' ? [] : user.permissions;
+
+    if ((CLOSED_LEAD_STATUSES as readonly string[]).includes(lead.status) && !isLeadAdmin(permissions)) {
+      throw new AppError('This lead is closed/booked. Only an admin can edit or reopen it.', 403);
+    }
 
     if (data.mobile && !isValidMobile(data.mobile)) {
       throw new AppError('Invalid mobile number', 400);
@@ -222,10 +229,11 @@ export const leadService = {
     return updated;
   },
 
-  delete: async (id: string, userId: string, ipAddress?: string) => {
+  delete: async (id: string, user: JwtPayload | string, ipAddress?: string) => {
     const lead = await leadRepository.findById(id);
     if (!lead) throw new AppError('Lead not found', 404);
 
+    const userId = typeof user === 'string' ? user : user.userId;
     await leadRepository.softDelete(id);
 
     await logActivity({
@@ -257,12 +265,18 @@ export const leadService = {
       return lead;
     }
 
-    const allowed = STATUS_TRANSITIONS[currentStatus] || [];
     const admin = isLeadAdmin(user.permissions);
+
+    // If current status is closed or booked, ONLY admin can reopen or change its status!
+    if ((CLOSED_LEAD_STATUSES as readonly string[]).includes(currentStatus) && !admin) {
+      throw new AppError('This lead is closed/booked. Only an admin can reopen or change its status.', 403);
+    }
+
+    const allowed = STATUS_TRANSITIONS[currentStatus] || [];
 
     if (!allowed.includes(newStatus) && !admin) {
       throw new AppError(
-        `Cannot transition from ${STATUS_LABELS[currentStatus]} to ${STATUS_LABELS[newStatus]}`,
+        `Cannot transition from ${STATUS_LABELS[currentStatus] || currentStatus} to ${STATUS_LABELS[newStatus] || newStatus}`,
         400
       );
     }
@@ -272,6 +286,11 @@ export const leadService = {
       updatedBy: new Types.ObjectId(user.userId),
     });
 
+    // If status became closed/booked, clear next follow-up date
+    if ((CLOSED_LEAD_STATUSES as readonly string[]).includes(newStatus)) {
+      await leadRepository.syncNextFollowUpDate(id, new Types.ObjectId(user.userId), undefined);
+    }
+
     const activityType =
       (CLOSED_LEAD_STATUSES as readonly string[]).includes(newStatus) ? 'LEAD_CLOSED' : 'STATUS_CHANGED';
 
@@ -279,7 +298,7 @@ export const leadService = {
       leadId: lead._id,
       assignmentId: lead.currentAssignmentId,
       type: activityType,
-      title: `Status changed to ${STATUS_LABELS[newStatus]}`,
+      title: `Status changed to ${STATUS_LABELS[newStatus] || newStatus}`,
       remark: data.remark,
       performedBy: new Types.ObjectId(user.userId),
       metadata: { from: currentStatus, to: newStatus },
@@ -299,11 +318,18 @@ export const leadService = {
   transfer: async (
     id: string,
     data: TransferLeadInput,
-    userId: string,
+    user: JwtPayload | string,
     ipAddress?: string
   ) => {
     const lead = await leadRepository.findById(id);
     if (!lead) throw new AppError('Lead not found', 404);
+
+    const userId = typeof user === 'string' ? user : user.userId;
+    const permissions = typeof user === 'string' ? [] : user.permissions;
+
+    if ((CLOSED_LEAD_STATUSES as readonly string[]).includes(lead.status) && !isLeadAdmin(permissions)) {
+      throw new AppError('This lead is closed/booked. Only an admin can transfer or reopen it.', 403);
+    }
 
     if (resolveRefId(lead.assignedTo) === data.assignedTo) {
       throw new AppError('Lead is already assigned to this employee', 400);
@@ -376,6 +402,10 @@ export const leadService = {
       throw new AppError('You do not have permission to add follow-ups', 403);
     }
 
+    if ((CLOSED_LEAD_STATUSES as readonly string[]).includes(lead.status) && !isLeadAdmin(user.permissions)) {
+      throw new AppError('This lead is closed/booked. Only an admin can add follow-ups or reopen it.', 403);
+    }
+
     if (!lead.currentAssignmentId) {
       const sequence = await leadRepository.getNextAssignmentSequence(id);
       const assignment = await leadRepository.createAssignment({
@@ -427,18 +457,39 @@ export const leadService = {
       createdBy: new Types.ObjectId(user.userId),
     });
 
-    // Always mirror the latest follow-up's NFD onto the lead (clear when omitted)
-    // so Due/Today/Tomorrow never keep a past/completed follow-up date.
+    const newStatus = (data.status as LeadStatus) || (lead.status as LeadStatus);
+    const isNewStatusClosed = (CLOSED_LEAD_STATUSES as readonly string[]).includes(newStatus);
+    const nextNfd = isNewStatusClosed && !data.nextFollowUpDate ? undefined : (data.nextFollowUpDate ? new Date(data.nextFollowUpDate) : undefined);
+
     await leadRepository.syncNextFollowUpDate(
       id,
       new Types.ObjectId(user.userId),
-      data.nextFollowUpDate ? new Date(data.nextFollowUpDate) : undefined
+      nextNfd
     );
 
     if (data.priority && lead.priority !== data.priority) {
       await leadRepository.update(id, {
         priority: data.priority as LeadPriority,
         updatedBy: new Types.ObjectId(user.userId),
+      });
+    }
+
+    if (data.status && lead.status !== data.status) {
+      const currentStatus = lead.status as LeadStatus;
+      await leadRepository.update(id, {
+        status: newStatus,
+        updatedBy: new Types.ObjectId(user.userId),
+      });
+
+      const statusActivityType = isNewStatusClosed ? 'LEAD_CLOSED' : 'STATUS_CHANGED';
+      await leadRepository.createActivity({
+        leadId: lead._id,
+        assignmentId: lead.currentAssignmentId,
+        type: statusActivityType,
+        title: `Status changed to ${STATUS_LABELS[newStatus] || newStatus}`,
+        remark: data.remark ? `Via follow-up: ${data.remark}` : 'Updated via follow-up',
+        performedBy: new Types.ObjectId(user.userId),
+        metadata: { from: currentStatus, to: newStatus, followUpId: followUp._id },
       });
     }
 
@@ -493,10 +544,10 @@ export const leadService = {
         site_visit: 'pending',
         revisit: 'pending',
       };
-      const nextStatus = statusMap[data.type];
-      if (nextStatus && lead.status !== nextStatus) {
+      const nextVisitStatus = statusMap[data.type];
+      if (nextVisitStatus && !data.status && lead.status !== nextVisitStatus) {
         await leadRepository.update(id, {
-          status: nextStatus as never,
+          status: nextVisitStatus as never,
           updatedBy: new Types.ObjectId(user.userId),
         });
       }
@@ -533,6 +584,10 @@ export const leadService = {
 
     if (!canManageLead(user, lead)) {
       throw new AppError('You do not have permission to add notes', 403);
+    }
+
+    if ((CLOSED_LEAD_STATUSES as readonly string[]).includes(lead.status) && !isLeadAdmin(user.permissions)) {
+      throw new AppError('This lead is closed/booked. Only an admin can add notes to a closed/booked lead.', 403);
     }
 
     const note = {

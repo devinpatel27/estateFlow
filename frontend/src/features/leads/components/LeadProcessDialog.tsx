@@ -44,7 +44,7 @@ type ProcessRow = {
 };
 
 export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadProcessDialogProps) {
-  const { hasPermission, isReady } = usePermissions();
+  const { hasPermission, canViewAllLeads, isReady } = usePermissions();
   const [activities, setActivities] = useState<LeadActivity[]>([]);
   const [followUps, setFollowUps] = useState<LeadFollowUp[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +52,8 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
   const [filterDate, setFilterDate] = useState('');
   const [followUpOpen, setFollowUpOpen] = useState(false);
 
-  const canFollowUp = isReady && hasPermission(PERMISSIONS.LEAD_FOLLOWUP_CREATE);
+  const isClosed = lead ? ['closed', 'booked'].includes(lead.status) : false;
+  const canFollowUp = isReady && hasPermission(PERMISSIONS.LEAD_FOLLOWUP_CREATE) && (!isClosed || canViewAllLeads());
 
   useEffect(() => {
     if (!open || !lead?._id) return;
@@ -303,7 +304,12 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
         </div>
       </ModalShell>
 
-      <FollowUpForm open={followUpOpen} onOpenChange={setFollowUpOpen} onSubmit={handleFollowUp} />
+      <FollowUpForm
+        open={followUpOpen}
+        onOpenChange={setFollowUpOpen}
+        initialStatus={lead?.status}
+        onSubmit={handleFollowUp}
+      />
     </>
   );
 }

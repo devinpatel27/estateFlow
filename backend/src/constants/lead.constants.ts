@@ -4,11 +4,12 @@ export type LeadCategory = (typeof LEAD_CATEGORIES)[number];
 export const LEAD_PRIORITIES = ['hot', 'warm', 'cold'] as const;
 export type LeadPriority = (typeof LEAD_PRIORITIES)[number];
 
-export const LEAD_STATUSES = ['open', 'pending', 'closed'] as const;
+export const LEAD_STATUSES = ['open', 'hold', 'pending', 'booked', 'closed'] as const;
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
 export const ACTIVE_LEAD_STATUSES = [
   'open',
+  'hold',
   'pending',
   'new',
   'contacted',
@@ -18,12 +19,14 @@ export const ACTIVE_LEAD_STATUSES = [
   'negotiation',
 ] as const;
 
-export const CLOSED_LEAD_STATUSES = ['closed', 'closed_won', 'closed_lost'] as const;
+export const CLOSED_LEAD_STATUSES = ['closed', 'booked', 'closed_won', 'closed_lost'] as const;
 
 export const LEAD_STATUS_BUCKETS: Record<LeadStatus, readonly string[]> = {
   open: ['open', 'new', 'contacted'],
+  hold: ['hold'],
   pending: ['pending', 'follow_up', 'visit_scheduled', 'revisit_scheduled', 'negotiation'],
-  closed: CLOSED_LEAD_STATUSES,
+  booked: ['booked', 'closed_won'],
+  closed: ['closed', 'closed_lost'],
 };
 
 export const FOLLOW_UP_TYPES = [
@@ -55,9 +58,11 @@ export const LEAD_ACTIVITY_TYPES = [
 export type LeadActivityType = (typeof LEAD_ACTIVITY_TYPES)[number];
 
 export const STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  open: ['pending', 'closed'],
-  pending: ['open', 'closed'],
-  closed: ['open', 'pending'],
+  open: ['hold', 'pending', 'booked', 'closed'],
+  hold: ['open', 'pending', 'booked', 'closed'],
+  pending: ['open', 'hold', 'booked', 'closed'],
+  booked: ['open', 'hold'],
+  closed: ['open', 'hold'],
 };
 
 export const CATEGORY_LABELS: Record<LeadCategory, string> = {
@@ -68,7 +73,9 @@ export const CATEGORY_LABELS: Record<LeadCategory, string> = {
 
 export const STATUS_LABELS: Record<LeadStatus, string> = {
   open: 'Open',
+  hold: 'Hold',
   pending: 'Pending',
+  booked: 'Booked',
   closed: 'Closed',
 };
 

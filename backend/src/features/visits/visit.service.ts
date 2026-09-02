@@ -18,7 +18,7 @@ import {
 } from './visit.validator';
 import { FOLLOW_UP_VISIT_TYPES } from '../../constants/visit.constants';
 import type { VisitStatus, VisitType } from '../../constants/visit.constants';
-import type { FollowUpType } from '../../constants/lead.constants';
+import { CLOSED_LEAD_STATUSES, type FollowUpType } from '../../constants/lead.constants';
 
 const assertCanAccessVisit = async (user: JwtPayload, visitId: string) => {
   const visit = await visitRepository.findById(visitId);
@@ -62,6 +62,9 @@ export const visitService = {
     if (!lead) throw new AppError('Lead not found', 404);
     if (!canAccessVisitForLead(user, lead)) {
       throw new AppError('You do not have access to create a visit for this lead', 403);
+    }
+    if ((CLOSED_LEAD_STATUSES as readonly string[]).includes(lead.status) && !canReadAllVisits(user.permissions)) {
+      throw new AppError('This lead is closed/booked. Only an admin can schedule visits for it.', 403);
     }
 
     const visit = await visitRepository.create({

@@ -29,6 +29,10 @@ export function LeadRowActions({ lead, canEdit, canFollowUp, onRefresh }: LeadRo
   const [editOpen, setEditOpen] = useState(false);
   const [processOpen, setProcessOpen] = useState(false);
 
+  const isClosed = ['closed', 'booked'].includes(lead.status);
+  const allowFollowUp = canFollowUp && !isClosed;
+  const allowEdit = canEdit && !isClosed;
+
   const handleFollowUp = async (data: FollowUpFormValues) => {
     try {
       await leadService.createFollowUp(lead._id, data);
@@ -44,7 +48,7 @@ export function LeadRowActions({ lead, canEdit, canFollowUp, onRefresh }: LeadRo
   return (
     <>
       <div className="flex items-center justify-end gap-1">
-        {canFollowUp && (
+        {allowFollowUp && (
           <RowActionButton
             icon={CalendarClock}
             label="Add follow-up"
@@ -71,7 +75,7 @@ export function LeadRowActions({ lead, canEdit, canFollowUp, onRefresh }: LeadRo
           tone="violet"
           onClick={() => setProcessOpen(true)}
         />
-        {canEdit && (
+        {allowEdit && (
           <RowActionButton
             icon={Pencil}
             label="Edit lead"
@@ -87,8 +91,13 @@ export function LeadRowActions({ lead, canEdit, canFollowUp, onRefresh }: LeadRo
         onOpenChange={setProcessOpen}
         onRefresh={onRefresh}
       />
-      <FollowUpForm open={followUpOpen} onOpenChange={setFollowUpOpen} onSubmit={handleFollowUp} />
-      {canEdit && (
+      <FollowUpForm
+        open={followUpOpen}
+        onOpenChange={setFollowUpOpen}
+        initialStatus={lead.status}
+        onSubmit={handleFollowUp}
+      />
+      {allowEdit && (
         <EditLeadDialog
           open={editOpen}
           onOpenChange={setEditOpen}

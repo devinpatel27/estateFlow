@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Pencil, Trash2, ArrowLeftRight, Plus, Phone, Mail, MapPin, Target, Calendar, MessageCircle,
+  Pencil, Trash2, ArrowLeftRight, Plus, Phone, Mail, MapPin, Target, Calendar, MessageCircle, Lock,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import { useLeadDetailData } from '../hooks/useFollowUps';
 import { useLeadActions } from '../hooks/useLeads';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS, LEAD_STATUSES } from '@/lib/constants';
-import { formatCurrency, formatDate, formatDateTime, formatLeadCategoryShort } from '@/lib/utils';
+import { cn, formatCurrency, formatDate, formatDateTime, formatLeadCategoryShort } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -47,7 +47,7 @@ function getMasterName(item: Lead['propertyType']): string {
 
 export function LeadProfile({ lead, onRefresh }: LeadProfileProps) {
   const router = useRouter();
-  const { hasPermission, isReady } = usePermissions();
+  const { hasPermission, canViewAllLeads, isReady } = usePermissions();
   const { followUps, activities, assignments, isLoading, refetch, addFollowUp, addNote } = useLeadDetailData(lead._id);
   const { deleteLead, updateStatus, transferLead, isLoading: actionLoading } = useLeadActions();
 
@@ -57,12 +57,16 @@ export function LeadProfile({ lead, onRefresh }: LeadProfileProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [noteText, setNoteText] = useState('');
 
-  const canEdit = isReady && hasPermission(PERMISSIONS.LEAD_UPDATE);
-  const canDelete = isReady && hasPermission(PERMISSIONS.LEAD_DELETE);
-  const canTransfer = isReady && hasPermission(PERMISSIONS.LEAD_TRANSFER);
-  const canFollowUp = isReady && hasPermission(PERMISSIONS.LEAD_FOLLOWUP_CREATE);
-  const canStatus = isReady && hasPermission(PERMISSIONS.LEAD_STATUS_UPDATE);
-  const canNote = isReady && hasPermission(PERMISSIONS.LEAD_NOTE_CREATE);
+  const isClosedStatus = ['closed', 'booked'].includes(lead.status);
+  const isLeadAdminUser = isReady && canViewAllLeads();
+  const isLeadLocked = isClosedStatus && !isLeadAdminUser;
+
+  const canEdit = isReady && hasPermission(PERMISSIONS.LEAD_UPDATE) && !isLeadLocked;
+  const canDelete = isReady && hasPermission(PERMISSIONS.LEAD_DELETE) && !isLeadLocked;
+  const canTransfer = isReady && hasPermission(PERMISSIONS.LEAD_TRANSFER) && !isLeadLocked;
+  const canFollowUp = isReady && hasPermission(PERMISSIONS.LEAD_FOLLOWUP_CREATE) && !isLeadLocked;
+  const canStatus = isReady && hasPermission(PERMISSIONS.LEAD_STATUS_UPDATE) && (!isClosedStatus || isLeadAdminUser);
+  const canNote = isReady && hasPermission(PERMISSIONS.LEAD_NOTE_CREATE) && !isLeadLocked;
 
   const categoryLabel = formatLeadCategoryShort(lead.category);
 
@@ -89,6 +93,22 @@ export function LeadProfile({ lead, onRefresh }: LeadProfileProps) {
 
   return (
     <div className="space-y-5">
+      {isClosedStatus && (
+        <div className={cn(
+          "flex items-center gap-2 rounded-xl p-3.5 text-xs font-medium border",
+          isLeadAdminUser 
+            ? "bg-amber-500/10 text-amber-800 dark:text-amber-200 border-amber-500/20"
+            : "bg-destructive/10 text-destructive border-destructive/20"
+        )}>
+          <Lock className="h-4 w-4 shrink-0" />
+          <span>
+            {isLeadAdminUser 
+              ? `This lead is currently ${lead.status === 'booked' ? 'Booked' : 'Closed'}. As an Admin, you can update its status or edit details to reopen it.`
+              : `This lead is currently ${lead.status === 'booked' ? 'Booked' : 'Closed'} and locked. Regular edits, transfers, and follow-ups are restricted until an Admin reopens it.`}
+          </span>
+        </div>
+      )}
+
       <Card className="crm-card p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -241,7 +261,16 @@ export function LeadProfile({ lead, onRefresh }: LeadProfileProps) {
         </div>
       </Card>
 
-      <FollowUpForm open={followUpOpen} onOpenChange={setFollowUpOpen} onSubmit={async (data: FollowUpFormValues) => { await addFollowUp(data); onRefresh(); refetch(); }} />
+      <FollowUpForm
+        open={followUpOpen}
+        onOpenChange={setFollowUpOpen}
+        initialStatus={lead.status}
+        onSubmit={async (data: FollowUpFormValues) => {
+          await addFollowUp(data);
+          onRefresh();
+          refetch();
+        }}
+      />
       {canTransfer && (
         <TransferLeadDialog
           open={transferOpen}

@@ -65,7 +65,7 @@ export const leadController = {
 
   update: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const lead = await leadService.update(req.params.id, req.body, req.user!.userId, req.ip);
+      const lead = await leadService.update(req.params.id, req.body, req.user!, req.ip);
       sendSuccess(res, 'Lead updated successfully', lead);
     } catch (error) {
       next(error);
@@ -74,7 +74,7 @@ export const leadController = {
 
   delete: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await leadService.delete(req.params.id, req.user!.userId, req.ip);
+      await leadService.delete(req.params.id, req.user!, req.ip);
       sendSuccess(res, 'Lead deleted successfully');
     } catch (error) {
       next(error);
@@ -92,7 +92,7 @@ export const leadController = {
 
   transfer: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const lead = await leadService.transfer(req.params.id, req.body, req.user!.userId, req.ip);
+      const lead = await leadService.transfer(req.params.id, req.body, req.user!, req.ip);
       sendSuccess(res, 'Lead transferred successfully', lead);
     } catch (error) {
       next(error);

@@ -103,6 +103,7 @@ export const createFollowUpSchema = z.object({
     followUpTime: z.string().optional(),
     type: z.enum(FOLLOW_UP_TYPES as unknown as [string, ...string[]]),
     priority: z.enum(LEAD_PRIORITIES as unknown as [string, ...string[]]).optional(),
+    status: z.enum(LEAD_STATUSES as unknown as [string, ...string[]]).optional(),
     parentActivity: z.string().optional(),
     childActivity: z.string().optional(),
     remark: z.string().optional(),
