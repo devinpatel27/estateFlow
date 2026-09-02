@@ -53,10 +53,16 @@ function buildFollowUpDueClause(type: 'today' | 'tomorrow' | 'overdue', now = ne
   const { startOfDay, endOfDay, tomorrowStart, tomorrowEnd } = getScheduleDateRanges(now);
 
   if (type === 'today') {
-    return { nextFollowUpDate: { $gte: startOfDay, $lte: endOfDay } };
+    return {
+      nextFollowUpDate: { $gte: startOfDay, $lte: endOfDay },
+      status: { $in: ACTIVE_LEAD_STATUSES },
+    };
   }
   if (type === 'tomorrow') {
-    return { nextFollowUpDate: { $gte: tomorrowStart, $lte: tomorrowEnd } };
+    return {
+      nextFollowUpDate: { $gte: tomorrowStart, $lte: tomorrowEnd },
+      status: { $in: ACTIVE_LEAD_STATUSES },
+    };
   }
   return {
     nextFollowUpDate: { $lt: startOfDay },
@@ -509,7 +515,11 @@ export const leadRepository = {
     const tomorrowEnd = new Date(tomorrowStart);
     tomorrowEnd.setHours(23, 59, 59, 999);
 
-    const baseQuery: FilterQuery<ILead> = { ...filter, deletedAt: null };
+    const baseQuery: FilterQuery<ILead> = {
+      ...filter,
+      deletedAt: null,
+      status: { $in: ACTIVE_LEAD_STATUSES },
+    };
 
     if (type === 'today') {
       baseQuery.nextFollowUpDate = { $gte: startOfDay, $lte: endOfDay };
@@ -517,7 +527,6 @@ export const leadRepository = {
       baseQuery.nextFollowUpDate = { $gte: tomorrowStart, $lte: tomorrowEnd };
     } else {
       baseQuery.nextFollowUpDate = { $lt: startOfDay };
-      baseQuery.status = { $in: ACTIVE_LEAD_STATUSES };
     }
 
     return LeadModel.countDocuments(baseQuery);
