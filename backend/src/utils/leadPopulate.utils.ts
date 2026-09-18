@@ -17,6 +17,14 @@ const collectIds = (docs: LeanDoc[], field: string): Types.ObjectId[] => {
   return [...ids].map((id) => new Types.ObjectId(id));
 };
 
+const normalizeStatus = (rawStatus: unknown): string => {
+  const s = String(rawStatus || 'open').toLowerCase();
+  if (['hold', 'on_hold', 'on-hold'].includes(s)) return 'hold';
+  if (['booked', 'closed_won', 'book'].includes(s)) return 'booked';
+  if (['closed', 'closed_lost', 'close'].includes(s)) return 'closed';
+  return 'open';
+};
+
 export const enrichLeads = async <T extends LeanDoc>(leads: T[]): Promise<T[]> => {
   if (leads.length === 0) return leads;
 
@@ -47,6 +55,7 @@ export const enrichLeads = async <T extends LeanDoc>(leads: T[]): Promise<T[]> =
 
     return {
       ...lead,
+      status: normalizeStatus(lead.status),
       propertyType: isValidObjectId(propertyTypeId)
         ? propertyTypeMap.get(propertyTypeId) ?? lead.propertyType
         : lead.propertyType,

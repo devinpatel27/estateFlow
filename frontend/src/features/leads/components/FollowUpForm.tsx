@@ -75,10 +75,25 @@ function inferFollowUpType(parentName = '', childName = ''): FollowUpFormValues[
   return 'call';
 }
 
+function inferStatusFromActivity(parentName = '', childName = ''): FollowUpFormValues['status'] | undefined {
+  const text = `${parentName} ${childName}`.toLowerCase();
+  if (text.includes('on hold') || text.includes('hold')) return 'hold';
+  if (
+    text.includes('closed') ||
+    text.includes('not interested') ||
+    text.includes('already purchased') ||
+    text.includes('non service area')
+  ) {
+    return 'closed';
+  }
+  if (text.includes('deal') || text.includes('booked')) return 'booked';
+  return undefined;
+}
+
 export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus }: FollowUpFormProps) {
   const [activities, setActivities] = useState<FollowUpActivity[]>(fallbackActivities);
   const [expandedParent, setExpandedParent] = useState('');
-  const normalizedInitialStatus = (initialStatus && ['open', 'hold', 'pending', 'booked', 'closed'].includes(initialStatus)
+  const normalizedInitialStatus = (initialStatus && ['open', 'hold', 'booked', 'closed'].includes(initialStatus)
     ? initialStatus
     : 'open') as FollowUpFormValues['status'];
 
@@ -101,7 +116,7 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus }: Fo
 
   useEffect(() => {
     if (!open) return;
-    const defaultStatus = (initialStatus && ['open', 'hold', 'pending', 'booked', 'closed'].includes(initialStatus)
+    const defaultStatus = (initialStatus && ['open', 'hold', 'booked', 'closed'].includes(initialStatus)
       ? initialStatus
       : 'open') as FollowUpFormValues['status'];
 
@@ -123,6 +138,8 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus }: Fo
         if (first) {
           form.setValue('parentActivity', first._id);
           form.setValue('type', inferFollowUpType(first.name));
+          const autoStatus = inferStatusFromActivity(first.name);
+          if (autoStatus) form.setValue('status', autoStatus);
           setExpandedParent(first._id);
         }
       })
@@ -249,6 +266,8 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus }: Fo
                             field.onChange(activity._id);
                             form.setValue('childActivity', '');
                             form.setValue('type', inferFollowUpType(activity.name));
+                            const autoStatus = inferStatusFromActivity(activity.name);
+                            if (autoStatus) form.setValue('status', autoStatus);
                             setExpandedParent(expandedParent === activity._id ? '' : activity._id);
                           }}
                         >
@@ -269,6 +288,8 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus }: Fo
                                   onClick={() => {
                                     form.setValue('childActivity', child._id);
                                     form.setValue('type', inferFollowUpType(activity.name, child.name));
+                                    const autoStatus = inferStatusFromActivity(activity.name, child.name);
+                                    if (autoStatus) form.setValue('status', autoStatus);
                                   }}
                                   className={cn(
                                     'min-h-10 rounded-lg border px-3 py-2 text-left text-xs font-semibold transition-colors',

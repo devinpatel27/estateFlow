@@ -538,19 +538,6 @@ export const leadService = {
         remark: data.remark,
         userId: user.userId,
       });
-
-      const statusMap: Record<string, string> = {
-        property_visit: 'pending',
-        site_visit: 'pending',
-        revisit: 'pending',
-      };
-      const nextVisitStatus = statusMap[data.type];
-      if (nextVisitStatus && !data.status && lead.status !== nextVisitStatus) {
-        await leadRepository.update(id, {
-          status: nextVisitStatus as never,
-          updatedBy: new Types.ObjectId(user.userId),
-        });
-      }
     }
 
     return followUp;

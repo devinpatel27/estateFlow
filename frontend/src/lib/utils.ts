@@ -1,4 +1,4 @@
-﻿import { type ClassValue, clsx } from 'clsx';
+import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format } from 'date-fns';
 
@@ -83,17 +83,18 @@ const STATUS_ALIASES: Record<string, string> = {
   new: 'open',
   contacted: 'open',
   open: 'open',
+  pending: 'open',
+  followup: 'open',
+  'follow-up': 'open',
+  follow_up: 'open',
+  visit_scheduled: 'open',
+  revisit_scheduled: 'open',
+  negotiation: 'open',
   hold: 'hold',
   on_hold: 'hold',
   'on-hold': 'hold',
   booked: 'booked',
   book: 'booked',
-  followup: 'follow_up',
-  'follow-up': 'follow_up',
-  follow_up: 'pending',
-  visit_scheduled: 'pending',
-  revisit_scheduled: 'pending',
-  negotiation: 'pending',
   closed_won: 'booked',
   closed_lost: 'closed',
   closed: 'closed',
@@ -121,15 +122,11 @@ export function normalizeLeadPriority(priority?: string | null): string {
 export function formatLeadStatus(status?: string | null): string {
   if (!status) return 'Unknown';
   const normalized = normalizeLeadStatus(status);
-  const found = ['open', 'hold', 'pending', 'booked', 'closed'].includes(normalized);
+  const found = ['open', 'hold', 'booked', 'closed'].includes(normalized);
   if (!found) {
     return normalized.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   }
-  return normalized
-    .split('_')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ')
-    .replace('Revisit', 'Re-Visit');
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
 export function formatLeadPriority(priority?: string | null): string {

@@ -4,7 +4,7 @@ export type LeadCategory = (typeof LEAD_CATEGORIES)[number];
 export const LEAD_PRIORITIES = ['hot', 'warm', 'cold'] as const;
 export type LeadPriority = (typeof LEAD_PRIORITIES)[number];
 
-export const LEAD_STATUSES = ['open', 'hold', 'pending', 'booked', 'closed'] as const;
+export const LEAD_STATUSES = ['open', 'hold', 'booked', 'closed'] as const;
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
 export const ACTIVE_LEAD_STATUSES = [
@@ -22,9 +22,8 @@ export const ACTIVE_LEAD_STATUSES = [
 export const CLOSED_LEAD_STATUSES = ['closed', 'booked', 'closed_won', 'closed_lost'] as const;
 
 export const LEAD_STATUS_BUCKETS: Record<LeadStatus, readonly string[]> = {
-  open: ['open', 'new', 'contacted'],
-  hold: ['hold'],
-  pending: ['pending', 'follow_up', 'visit_scheduled', 'revisit_scheduled', 'negotiation'],
+  open: ['open', 'new', 'contacted', 'pending', 'follow_up', 'visit_scheduled', 'revisit_scheduled', 'negotiation'],
+  hold: ['hold', 'on_hold', 'on-hold'],
   booked: ['booked', 'closed_won'],
   closed: ['closed', 'closed_lost'],
 };
@@ -57,30 +56,37 @@ export const LEAD_ACTIVITY_TYPES = [
 ] as const;
 export type LeadActivityType = (typeof LEAD_ACTIVITY_TYPES)[number];
 
-export const STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  open: ['hold', 'pending', 'booked', 'closed'],
-  hold: ['open', 'pending', 'booked', 'closed'],
-  pending: ['open', 'hold', 'booked', 'closed'],
-  booked: ['open', 'hold'],
-  closed: ['open', 'hold'],
-};
-
 export const CATEGORY_LABELS: Record<LeadCategory, string> = {
   buy_property: 'Buy Property',
   sell_property: 'Sell Property',
   rent_property: 'Rent Property',
 };
 
-export const STATUS_LABELS: Record<LeadStatus, string> = {
+export const STATUS_LABELS: Record<string, string> = {
   open: 'Open',
   hold: 'Hold',
-  pending: 'Pending',
   booked: 'Booked',
   closed: 'Closed',
+  pending: 'Open',
+  new: 'Open',
+  contacted: 'Open',
+  follow_up: 'Open',
+  visit_scheduled: 'Open',
+  revisit_scheduled: 'Open',
+  negotiation: 'Open',
+  closed_won: 'Booked',
+  closed_lost: 'Closed',
 };
 
 export const PRIORITY_LABELS: Record<LeadPriority, string> = {
   hot: 'Hot',
   warm: 'Warm',
   cold: 'Cold',
+};
+
+export const STATUS_TRANSITIONS: Record<LeadStatus, readonly LeadStatus[]> = {
+  open: ['hold', 'booked', 'closed'],
+  hold: ['open', 'booked', 'closed'],
+  booked: ['open', 'hold', 'closed'],
+  closed: ['open', 'hold'],
 };

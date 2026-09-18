@@ -29,7 +29,7 @@ import {
 
 const ACTIVE_PROPERTY_STATUSES = ['available', 'under_negotiation', 'reserved'];
 
-const PIE_LEAD_STATUSES: LeadStatus[] = ['open', 'hold', 'pending', 'booked', 'closed'];
+const PIE_LEAD_STATUSES: LeadStatus[] = ['open', 'hold', 'booked', 'closed'];
 
 function pct(numerator: number, denominator: number): number {
   if (denominator === 0) return 0;

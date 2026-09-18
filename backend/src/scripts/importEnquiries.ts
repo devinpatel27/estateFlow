@@ -117,8 +117,8 @@ const resolveStatus = (lastRemark: string): LeadStatus => {
     return 'closed';
   }
   if (/not interested|no requirement/.test(r)) return 'closed';
-  if (/postpone/.test(r)) return 'pending';
-  if (/call.*(not|nor).*receiv/.test(r)) return 'pending';
+  if (/postpone/.test(r)) return 'hold';
+  if (/call.*(not|nor).*receiv/.test(r)) return 'open';
   if (/\bclosed\b/.test(r)) return 'closed';
   return 'open';
 };

@@ -159,7 +159,6 @@ export const LEAD_PRIORITIES = [
 export const LEAD_STATUSES = [
   { value: 'open', label: 'Open' },
   { value: 'hold', label: 'Hold' },
-  { value: 'pending', label: 'Pending' },
   { value: 'booked', label: 'Booked' },
   { value: 'closed', label: 'Closed' },
 ] as const;
