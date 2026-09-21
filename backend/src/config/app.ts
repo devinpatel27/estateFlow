@@ -1,4 +1,4 @@
-import express, { Application } from 'express';
+﻿import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -59,6 +59,16 @@ export const createApp = (): Application => {
   app.use('/api/settings', settingsRoutes);
   app.use('/api/public', publicRoutes);
   app.use('/api/reports', reportRoutes);
+
+  app.get('/', (_req, res) => {
+    res.json({
+      success: true,
+      name: 'RealView Realty CRM API',
+      status: 'running',
+      health: '/health',
+      timestamp: new Date().toISOString(),
+    });
+  });
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
