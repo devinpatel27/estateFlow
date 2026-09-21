@@ -37,11 +37,6 @@ export function LoginForm() {
     defaultValues: { email: '', password: '' },
   });
 
-  const fillDemoCredentials = () => {
-    form.setValue('email', 'admin@realviewrealty.com');
-    form.setValue('password', 'Admin@1234');
-  };
-
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#070b14]">
       {/* Animated background */}
@@ -111,7 +106,7 @@ export function LoginForm() {
                           <Mail className="login-input-icon" />
                           <Input
                             type="email"
-                            placeholder="admin@realviewrealty.com"
+                            placeholder="Enter your email"
                             autoComplete="email"
                             disabled={isLoading}
                             className="login-input"
@@ -197,27 +192,6 @@ export function LoginForm() {
                 </Button>
               </form>
             </Form>
-
-            {/* Dev credentials helper */}
-            <div className="mt-6 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-              <p className="text-xs font-semibold text-blue-300">Default Admin Credentials</p>
-              <div className="mt-2 space-y-1 font-mono text-xs text-slate-400">
-                <p>
-                  Email:{' '}
-                  <span className="text-slate-200">admin@realviewrealty.com</span>
-                </p>
-                <p>
-                  Password: <span className="text-slate-200">Admin@1234</span>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={fillDemoCredentials}
-                className="mt-3 text-xs font-medium text-blue-400 transition-colors hover:text-blue-300"
-              >
-                Click to auto-fill credentials →
-              </button>
-            </div>
           </div>
 
           <p className="mt-8 text-center text-xs text-slate-600">
