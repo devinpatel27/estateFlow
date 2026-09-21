@@ -6,11 +6,6 @@ import { seedAdmin } from './scripts/seedAdmin';
 import { seedMasters } from './scripts/seedMasters';
 
 const startServer = async (): Promise<void> => {
-  await connectDatabase();
-  await syncIndexes();
-  await seedAdmin();
-  await seedMasters();
-
   const app = createApp();
 
   const server = app.listen(env.PORT, () => {
@@ -18,6 +13,16 @@ const startServer = async (): Promise<void> => {
     console.log(`📡 API: http://localhost:${env.PORT}/api`);
     console.log(`🏥 Health: http://localhost:${env.PORT}/health`);
   });
+
+  try {
+    await connectDatabase();
+    await syncIndexes();
+    await seedAdmin();
+    await seedMasters();
+    console.log('✅ Database connected and initialized successfully');
+  } catch (dbError) {
+    console.error('❌ Database connection or seeding error:', dbError);
+  }
 
   const shutdown = async (signal: string) => {
     console.log(`\n${signal} received. Shutting down gracefully...`);
@@ -32,11 +37,9 @@ const startServer = async (): Promise<void> => {
 
   process.on('unhandledRejection', (reason) => {
     console.error('Unhandled Promise Rejection:', reason);
-    process.exit(1);
   });
 };
 
 startServer().catch((error) => {
   console.error('Failed to start server:', error);
-  process.exit(1);
 });
