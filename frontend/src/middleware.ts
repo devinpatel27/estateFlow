@@ -12,15 +12,19 @@ export function middleware(request: NextRequest) {
 
   if (isPublicRoute) {
     if (token) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      url.search = '';
+      return NextResponse.redirect(url);
     }
     return NextResponse.next();
   }
 
   if (!token) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('from', pathname);
-    return NextResponse.redirect(loginUrl);
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('from', pathname);
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
