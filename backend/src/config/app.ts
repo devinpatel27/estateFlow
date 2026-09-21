@@ -1,4 +1,4 @@
-﻿import express, { Application } from 'express';
+import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -27,12 +27,34 @@ export const createApp = (): Application => {
     })
   );
 
+  const allowedOrigins = [
+    env.FRONTEND_URL,
+    env.WEBSITE_URL,
+    'https://crm.realviewrealty.com',
+    'https://realviewrealty.com',
+    'https://www.realviewrealty.com',
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ]
+    .filter(Boolean)
+    .map((url) => url.replace(/\/+$/, ''));
+
   app.use(
     cors({
-      origin: [env.FRONTEND_URL, env.WEBSITE_URL],
+      origin: (origin, callback) => {
+        if (
+          !origin ||
+          allowedOrigins.includes(origin.replace(/\/+$/, '')) ||
+          origin.endsWith('realviewrealty.com')
+        ) {
+          callback(null, true);
+        } else {
+          callback(null, true);
+        }
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     })
   );
 
