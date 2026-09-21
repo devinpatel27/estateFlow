@@ -7,22 +7,26 @@ import { seedMasters } from './scripts/seedMasters';
 
 const startServer = async (): Promise<void> => {
   const app = createApp();
+  const PORT = Number(process.env.PORT) || env.PORT || 5000;
+  const HOST = '0.0.0.0';
 
-  const server = app.listen(env.PORT, () => {
-    console.log(`🚀 Server running on port ${env.PORT} [${env.NODE_ENV}]`);
-    console.log(`📡 API: http://localhost:${env.PORT}/api`);
-    console.log(`🏥 Health: http://localhost:${env.PORT}/health`);
+  const server = app.listen(PORT, HOST, () => {
+    console.log(`🚀 Server running on http://${HOST}:${PORT} [${env.NODE_ENV}]`);
+    console.log(`📡 API: http://${HOST}:${PORT}/api`);
+    console.log(`🏥 Health: http://${HOST}:${PORT}/health`);
   });
 
-  try {
-    await connectDatabase();
-    await syncIndexes();
-    await seedAdmin();
-    await seedMasters();
-    console.log('✅ Database connected and initialized successfully');
-  } catch (dbError) {
-    console.error('❌ Database connection or seeding error:', dbError);
-  }
+  // Initialize DB asynchronously so HTTP health check is instantly available
+  connectDatabase()
+    .then(async () => {
+      await syncIndexes();
+      await seedAdmin();
+      await seedMasters();
+      console.log('✅ Database connected and initialized successfully');
+    })
+    .catch((dbError) => {
+      console.error('❌ Database connection or seeding error:', dbError);
+    });
 
   const shutdown = async (signal: string) => {
     console.log(`\n${signal} received. Shutting down gracefully...`);
