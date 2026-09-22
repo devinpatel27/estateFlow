@@ -31,6 +31,8 @@ export const createApp = (): Application => {
     env.FRONTEND_URL,
     env.WEBSITE_URL,
     'https://crm.realviewrealty.com',
+    'https://backend.realviewrealty.com',
+    'https://api.realviewrealty.com',
     'https://realviewrealty.com',
     'https://www.realviewrealty.com',
     'http://localhost:3000',
