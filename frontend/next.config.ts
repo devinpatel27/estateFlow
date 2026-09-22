@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
         hostname: uploadsHost,
         pathname: '/uploads/**',
       },
+      {
+        protocol: 'https',
+        hostname: '**.realviewrealty.com',
+        pathname: '/uploads/**',
+      },
     ],
   },
   experimental: {
