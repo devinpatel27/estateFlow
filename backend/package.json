@@ -16,6 +16,7 @@
     "render:start": "npm run render:build && npm start",
     "seed": "ts-node src/scripts/seedAdmin.ts",
     "import:enquiries": "ts-node src/scripts/importEnquiries.ts",
+    "migrate:sql-backup": "ts-node src/scripts/migrateSqlBackup.ts",
     "backfill:latest-nfd": "ts-node src/scripts/backfillLatestNfd.ts"
   },
   "dependencies": {
@@ -41,6 +42,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/mssql": "^12.3.0",
+    "mssql": "^12.7.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0"
   }
