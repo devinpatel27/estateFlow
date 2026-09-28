@@ -95,6 +95,7 @@ export function LeadRowActions({ lead, canEdit, canFollowUp, onRefresh }: LeadRo
         open={followUpOpen}
         onOpenChange={setFollowUpOpen}
         initialStatus={lead.status}
+        previousRemark={lead.lastFollowUpRemark || lead.initialRemark}
         onSubmit={handleFollowUp}
       />
       {allowEdit && (

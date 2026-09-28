@@ -265,6 +265,7 @@ export function LeadProfile({ lead, onRefresh }: LeadProfileProps) {
         open={followUpOpen}
         onOpenChange={setFollowUpOpen}
         initialStatus={lead.status}
+        previousRemark={lead.lastFollowUpRemark || lead.initialRemark}
         onSubmit={async (data: FollowUpFormValues) => {
           await addFollowUp(data);
           onRefresh();

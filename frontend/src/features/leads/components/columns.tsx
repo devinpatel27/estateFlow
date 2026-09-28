@@ -1,14 +1,22 @@
 'use client';
 
+import { useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, Copy, ExternalLink, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 import { Lead } from '../types/lead.types';
 import { Button } from '@/components/ui/button';
 import { LeadStatusBadge, LeadPriorityBadge } from './LeadStatusBadge';
 import { NextFollowUpCell } from './NextFollowUpCell';
 import { LeadRowActions } from './LeadRowActions';
-import { Badge } from '@/components/ui/badge';
-import { formatDate, formatDateTime, formatLeadCategoryShort } from '@/lib/utils';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface ColumnActions {
   canEdit: boolean;
@@ -22,15 +30,82 @@ function getMasterName(item: Lead['propertyType']): string {
   return typeof item === 'string' ? item : item.name;
 }
 
+function LastDiscussedCell({ lead }: { lead: Lead }) {
+  const remark = lead.lastFollowUpRemark;
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-1 min-w-[200px] max-w-[340px]">
+      <div className="flex items-center gap-2">
+        <NextFollowUpCell date={lead.nextFollowUpDate} />
+      </div>
+      {remark ? (
+        <div className="flex items-start gap-1.5 group">
+          <p
+            className="text-xs text-muted-foreground line-clamp-2 leading-relaxed cursor-pointer hover:text-foreground transition-colors"
+            title="Click to view full remark"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(true);
+            }}
+          >
+            {remark}
+          </p>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(true);
+            }}
+            className="shrink-0 text-muted-foreground/60 hover:text-primary p-0.5 rounded transition-colors"
+            title="View full remark"
+          >
+            <ExternalLink className="h-3 w-3" />
+          </button>
+        </div>
+      ) : (
+        <span className="text-xs text-muted-foreground/50 italic">No remark yet</span>
+      )}
+
+      {open && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent onClick={(e) => e.stopPropagation()} className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                Latest Follow-Up Discussion
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                {lead.customerName} ({lead.leadId})
+              </DialogDescription>
+            </DialogHeader>
+            <div className="my-2 rounded-lg border bg-muted/30 p-3 text-sm leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto">
+              {remark}
+            </div>
+            <div className="flex justify-end">
+              <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
 export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
   const columns: ColumnDef<Lead>[] = [
     {
       accessorKey: 'leadId',
-      header: 'Lead ID',
+      header: 'Lead / Date',
       cell: ({ row }) => (
-        <span className="text-xs font-mono font-medium text-muted-foreground">{row.original.leadId}</span>
+        <div className="flex flex-col">
+          <span className="text-xs font-mono font-semibold text-foreground">{row.original.leadId}</span>
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">{formatDate(row.original.createdAt)}</span>
+        </div>
       ),
-      size: 90,
+      size: 110,
     },
     {
       id: 'customerName',
@@ -52,63 +127,57 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
       cell: ({ row }) => {
         const lead = row.original;
         return (
-          <div>
-            <p className="text-sm font-medium">{lead.customerName || '—'}</p>
-            <p className="text-xs text-muted-foreground">{lead.mobile}</p>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground truncate">{lead.customerName || '—'}</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-xs text-muted-foreground font-mono">{lead.mobile}</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(lead.mobile);
+                  toast.success(`Copied: ${lead.mobile}`);
+                }}
+                className="p-0.5 rounded text-muted-foreground/60 hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                title="Copy mobile number"
+              >
+                <Copy className="h-3 w-3" />
+              </button>
+            </div>
           </div>
         );
       },
-      minSize: 160,
-    },
-    {
-      id: 'category',
-      header: 'Category',
-      cell: ({ row }) => (
-        <Badge variant="outline" className="text-[11px] font-semibold uppercase tracking-wide">
-          {formatLeadCategoryShort(row.original.category)}
-        </Badge>
-      ),
-      size: 72,
+      minSize: 150,
     },
     {
       id: 'propertyType',
       header: 'Property Type',
-      cell: ({ row }) => <span className="text-xs capitalize">{getMasterName(row.original.propertyType)}</span>,
+      cell: ({ row }) => (
+        <div className="flex flex-col">
+          <span className="text-xs font-medium capitalize">{getMasterName(row.original.propertyType)}</span>
+          {row.original.propertyConfiguration && (
+            <span className="text-[11px] text-muted-foreground">{row.original.propertyConfiguration}</span>
+          )}
+        </div>
+      ),
       size: 120,
     },
     {
-      accessorKey: 'priority',
-      header: 'Priority',
-      cell: ({ row }) => <LeadPriorityBadge priority={row.original.priority} />,
-      size: 90,
-    },
-    {
-      accessorKey: 'status',
-      header: 'Status',
-      cell: ({ row }) => <LeadStatusBadge status={row.original.status} />,
+      id: 'priorityAndStatus',
+      header: 'Priority & Status',
+      cell: ({ row }) => (
+        <div className="flex flex-col gap-1 items-start">
+          <LeadPriorityBadge priority={row.original.priority} />
+          <LeadStatusBadge status={row.original.status} />
+        </div>
+      ),
       size: 130,
     },
     {
-      accessorKey: 'nextFollowUpDate',
-      header: () => <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide">NFD</span>,
-      cell: ({ row }) => <NextFollowUpCell date={row.original.nextFollowUpDate} />,
-      size: 140,
-    },
-    {
-      id: 'lastRemark',
-      header: () => <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide">Last Discussed</span>,
-      cell: ({ row }) => {
-        const remark = row.original.lastFollowUpRemark;
-        if (!remark) {
-          return <span className="text-xs text-muted-foreground">—</span>;
-        }
-        return (
-          <p className="max-w-[180px] truncate text-xs" title={remark}>
-            {remark}
-          </p>
-        );
-      },
-      size: 180,
+      id: 'nextFollowUpAndRemark',
+      header: () => <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide">NFD & Last Discussed</span>,
+      cell: ({ row }) => <LastDiscussedCell lead={row.original} />,
+      minSize: 220,
     },
     {
       id: 'assignment',
@@ -131,7 +200,7 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
           </div>
         );
       },
-      size: 150,
+      size: 140,
     },
     {
       id: 'actions',

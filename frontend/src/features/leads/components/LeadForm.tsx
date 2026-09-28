@@ -76,6 +76,7 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [areas, setAreas] = useState<string[]>([]);
   const [duplicateLead, setDuplicateLead] = useState<Lead | null>(null);
+  const [closedLeads, setClosedLeads] = useState<Lead[]>([]);
   const [mobileCheckStatus, setMobileCheckStatus] = useState<MobileCheckStatus>('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
@@ -155,11 +156,13 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
     if (mode !== 'create') return;
     if (!normalized) {
       setDuplicateLead(null);
+      setClosedLeads([]);
       setMobileCheckStatus('idle');
       return;
     }
     if (normalized.length < 10) {
       setDuplicateLead(null);
+      setClosedLeads([]);
       setMobileCheckStatus('invalid');
       return;
     }
@@ -167,15 +170,20 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
     setMobileCheckStatus('checking');
     try {
       const res = await leadService.checkMobile(normalized);
-      if (res.success && res.data?.activeLead) {
-        setDuplicateLead(res.data.activeLead);
-        setMobileCheckStatus('duplicate');
+      if (res.success) {
+        const active = res.data?.activeLead || null;
+        const closed = res.data?.closedLeads || [];
+        setDuplicateLead(active);
+        setClosedLeads(closed);
+        setMobileCheckStatus(active ? 'duplicate' : 'available');
       } else {
         setDuplicateLead(null);
+        setClosedLeads([]);
         setMobileCheckStatus('available');
       }
     } catch {
       setDuplicateLead(null);
+      setClosedLeads([]);
       setMobileCheckStatus('idle');
     }
   };
@@ -250,7 +258,16 @@ export function LeadForm({ lead, mode, variant = 'page', onSuccess, onCancel }: 
         )}
       >
         <div className={cn(isModal && 'min-h-0 flex-1 space-y-5 overflow-y-auto pr-1', !isModal && 'space-y-5')}>
-        {duplicateLead && <DuplicateLeadAlert activeLead={duplicateLead} onDismiss={() => setDuplicateLead(null)} />}
+        {(duplicateLead || closedLeads.length > 0) && (
+          <DuplicateLeadAlert
+            activeLead={duplicateLead}
+            closedLeads={closedLeads}
+            onDismiss={() => {
+              setDuplicateLead(null);
+              setClosedLeads([]);
+            }}
+          />
+        )}
 
         <FormSection icon={User} title="Customer Information" compact={isModal}>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

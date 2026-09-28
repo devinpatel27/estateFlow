@@ -58,6 +58,7 @@ export const followUpSchema = z.object({
   childActivity: z.string().optional(),
   remark: z.string().optional(),
   nextFollowUpDate: z.string().optional(),
+  nextFollowUpTime: z.string().optional(),
 });
 
 export const transferLeadSchema = z.object({

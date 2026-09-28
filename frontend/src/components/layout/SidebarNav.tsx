@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/constants';
 import { prefetchRouteData } from '@/lib/route-prefetch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface NavItem {
   label: string;
@@ -195,7 +196,7 @@ function NavLink({
   onNavClick?: () => void;
   onPrefetch?: (href: string) => void;
 }) {
-  return (
+  const linkContent = (
     <Link
       href={item.href}
       prefetch
@@ -207,7 +208,6 @@ function NavLink({
         active ? 'crm-sidebar-nav-active' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground',
         collapsed && 'justify-center px-2.5'
       )}
-      title={collapsed ? item.label : undefined}
     >
       <item.icon
         className={cn(
@@ -222,6 +222,19 @@ function NavLink({
       )}
     </Link>
   );
+
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+        <TooltipContent side="right" sideOffset={10} className="font-semibold text-xs">
+          {item.label}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return linkContent;
 }
 
 export function SidebarNav({ collapsed, onNavClick }: SidebarNavProps) {
@@ -274,7 +287,8 @@ export function SidebarNav({ collapsed, onNavClick }: SidebarNavProps) {
     .filter((accordion) => accordion.items.length > 0);
 
   return (
-    <nav className="flex-1 overflow-y-auto px-3 py-3">
+    <TooltipProvider delayDuration={50}>
+      <nav className="flex-1 overflow-y-auto px-3 py-3">
       {navGroups.map((group) => {
         const visibleItems = filterVisible(group.items);
         if (visibleItems.length === 0) return null;
@@ -378,6 +392,7 @@ export function SidebarNav({ collapsed, onNavClick }: SidebarNavProps) {
           </div>
         </div>
       )}
-    </nav>
+      </nav>
+    </TooltipProvider>
   );
 }

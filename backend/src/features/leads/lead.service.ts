@@ -642,7 +642,8 @@ export const leadService = {
         };
       }
       baseFilter.assignedTo = assignedTo;
-      const leadIds = await LeadModel.find({ assignedTo, deletedAt: null }).select('_id').lean();
+      baseFilter.status = { $in: ACTIVE_LEAD_STATUSES };
+      const leadIds = await LeadModel.find({ assignedTo, deletedAt: null, status: { $in: ACTIVE_LEAD_STATUSES } }).select('_id').lean();
       visitLeadFilter = {
         status: 'scheduled',
         leadId: { $in: leadIds.map((l) => l._id) },

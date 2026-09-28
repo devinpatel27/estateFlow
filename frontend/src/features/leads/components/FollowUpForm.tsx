@@ -32,6 +32,7 @@ interface FollowUpFormProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: FollowUpFormValues) => Promise<void>;
   initialStatus?: string;
+  previousRemark?: string;
 }
 
 const followUpTypeIcons: Record<string, React.ElementType> = {
@@ -90,7 +91,7 @@ function inferStatusFromActivity(parentName = '', childName = ''): FollowUpFormV
   return undefined;
 }
 
-export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus }: FollowUpFormProps) {
+export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus, previousRemark }: FollowUpFormProps) {
   const [activities, setActivities] = useState<FollowUpActivity[]>(fallbackActivities);
   const [expandedParent, setExpandedParent] = useState('');
   const normalizedInitialStatus = (initialStatus && ['open', 'hold', 'booked', 'closed'].includes(initialStatus)
@@ -108,6 +109,7 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus }: Fo
       childActivity: '',
       remark: '',
       nextFollowUpDate: '',
+      nextFollowUpTime: '12:00',
     },
   });
   const parentActivity = form.watch('parentActivity');
@@ -129,6 +131,7 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus }: Fo
       childActivity: '',
       remark: '',
       nextFollowUpDate: '',
+      nextFollowUpTime: '12:00',
     });
     masterService.listFollowUpActivities(true)
       .then((res) => {
@@ -162,6 +165,7 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus }: Fo
       childActivity: '',
       remark: '',
       nextFollowUpDate: '',
+      nextFollowUpTime: '12:00',
     });
     onOpenChange(false);
   };
@@ -173,10 +177,18 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus }: Fo
       title="Add Follow-Up"
       description="Record a follow-up activity for this lead"
       icon={CalendarPlus}
-      maxWidth="sm:max-w-2xl"
+      maxWidth="sm:max-w-3xl"
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          {previousRemark && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 text-xs">
+              <span className="font-semibold text-primary uppercase text-[10px] tracking-wider block mb-1">
+                Previous Discussion / Latest Remark
+              </span>
+              <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">{previousRemark}</p>
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField control={form.control} name="priority" render={({ field }) => (
               <FormItem>
@@ -315,25 +327,46 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus }: Fo
           <FormField control={form.control} name="remark" render={({ field }) => (
             <FormItem>
               <FormLabel>Remark{selectedParent ? <span className="ml-2 text-xs font-normal text-muted-foreground">for {selectedParent.name}</span> : null}</FormLabel>
-              <FormControl><textarea className="crm-input min-h-[70px] w-full resize-y px-3 py-2" placeholder="What was discussed..." {...field} /></FormControl>
+              <FormControl>
+                <textarea
+                  className="crm-input min-h-[90px] w-full resize-y px-3 py-2 text-sm leading-relaxed"
+                  rows={3}
+                  placeholder="What was discussed with the customer..."
+                  {...field}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )} />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <FormField control={form.control} name="followUpDate" render={({ field }) => (
               <FormItem>
                 <FormLabel>Follow-up Date <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
-                  <DatePicker value={field.value} onChange={field.onChange} placeholder="Select follow-up date" />
+                  <DatePicker value={field.value} onChange={field.onChange} placeholder="Select date" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="nextFollowUpDate" render={({ field }) => (
               <FormItem>
-                <FormLabel>Next Follow-up Date</FormLabel>
+                <FormLabel>Next Follow-up Date (NFD)</FormLabel>
                 <FormControl>
-                  <DatePicker value={field.value} onChange={field.onChange} placeholder="Select next follow-up date" />
+                  <DatePicker value={field.value} onChange={field.onChange} placeholder="Select next date" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="nextFollowUpTime" render={({ field }) => (
+              <FormItem>
+                <FormLabel>NFD Time</FormLabel>
+                <FormControl>
+                  <input
+                    type="time"
+                    className="crm-input h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+                    value={field.value || '12:00'}
+                    onChange={field.onChange}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

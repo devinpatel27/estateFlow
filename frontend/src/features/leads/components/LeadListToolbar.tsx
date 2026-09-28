@@ -10,9 +10,10 @@ import {
 } from '@/components/ui/select';
 import { FilterTabs } from '@/components/common/FilterTabs';
 import { DateRangePicker } from '@/components/common/DateRangePicker';
-import { LEAD_STATUSES, LEAD_PRIORITIES, LEAD_CATEGORIES } from '@/lib/constants';
+import { LEAD_STATUSES, LEAD_PRIORITIES, LEAD_CATEGORIES, PERMISSIONS } from '@/lib/constants';
 import { formatLeadStatus, formatLeadPriority, formatLeadCategoryShort } from '@/lib/utils';
 import { LeadListParams } from '../types/lead.types';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const FOLLOW_UP_DUE_OPTIONS = [
   { value: 'all' as const, label: 'All' },
@@ -36,6 +37,12 @@ export function LeadListToolbar({
   onSearchChange,
   onParamsChange,
 }: LeadListToolbarProps) {
+  const { hasPermission, isReady } = usePermissions();
+  const canViewAll = isReady && (hasPermission(PERMISSIONS.WILDCARD) || hasPermission(PERMISSIONS.LEAD_READ));
+  const availableStatuses = canViewAll
+    ? LEAD_STATUSES
+    : LEAD_STATUSES.filter((s) => !['closed', 'booked'].includes(s.value));
+
   const statusLabel = params.status
     ? formatLeadStatus(params.status)
     : 'All Status';
@@ -97,7 +104,7 @@ export function LeadListToolbar({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            {LEAD_STATUSES.map((s) => (
+            {availableStatuses.map((s) => (
               <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
             ))}
           </SelectContent>

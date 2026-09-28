@@ -249,7 +249,7 @@ export function DataTable<TData, TValue>({
                 </TableRow>
               ))
             ) : table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
+              table.getRowModel().rows.map((row, idx) => (
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
@@ -259,8 +259,10 @@ export function DataTable<TData, TValue>({
                   }}
                   className={cn(
                     'transition-colors',
+                    idx % 2 === 0 ? 'bg-background' : 'bg-muted/30 dark:bg-muted/15',
+                    'hover:bg-muted/50 dark:hover:bg-muted/30',
                     onRowClick && 'cursor-pointer',
-                    row.getIsSelected() && 'bg-primary/5',
+                    row.getIsSelected() && 'bg-primary/10',
                     getRowClassName?.(row.original)
                   )}
                 >

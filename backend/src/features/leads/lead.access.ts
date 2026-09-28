@@ -1,6 +1,7 @@
 import { JwtPayload } from '../../types/api.types';
 import { ILead } from '../../models/Lead.model';
 import { PERMISSIONS } from '../../constants/permissions';
+import { CLOSED_LEAD_STATUSES } from '../../constants/lead.constants';
 import { resolveRefId } from '../../utils/objectId.utils';
 
 export interface LeadAccessScope {
@@ -40,8 +41,9 @@ export const getLeadAccessScope = (user: JwtPayload, lead: ILead): LeadAccessSco
 
   const canReadAssigned = hasLeadPermission(user.permissions, PERMISSIONS.LEAD_READ_ASSIGNED);
   const isAssigned = assignedToId === userId;
+  const isClosed = (CLOSED_LEAD_STATUSES as readonly string[]).includes(lead.status as string);
 
-  if (!canReadAssigned || !isAssigned || lead.deletedAt) {
+  if (!canReadAssigned || !isAssigned || lead.deletedAt || isClosed) {
     return { canView: false, isAdmin: false, assignedOnly: true, userId };
   }
 

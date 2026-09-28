@@ -282,14 +282,26 @@ export const leadRepository = {
       }
     }
 
-    if (options.status) {
+    if (options.assignedOnly) {
+      if (options.status) {
+        const bucket = LEAD_STATUS_BUCKETS[options.status as keyof typeof LEAD_STATUS_BUCKETS];
+        const requested = bucket ? (bucket as readonly string[]) : [options.status];
+        const allowed = requested.filter((s) => (ACTIVE_LEAD_STATUSES as readonly string[]).includes(s));
+        if (allowed.length === 0) {
+          return { data: [], total: 0 };
+        }
+        query.status = allowed.length === 1 ? allowed[0] : { $in: allowed };
+      } else {
+        query.status = { $in: ACTIVE_LEAD_STATUSES };
+      }
+    } else if (options.status) {
       const bucket = LEAD_STATUS_BUCKETS[options.status as keyof typeof LEAD_STATUS_BUCKETS];
       query.status = bucket ? { $in: bucket } : options.status;
     }
     if (options.category) query.category = options.category;
     if (options.priority) {
       query.priority = options.priority;
-      if (!options.status) {
+      if (!options.status && !options.assignedOnly) {
         query.status = { $in: ACTIVE_LEAD_STATUSES };
       }
     }
@@ -358,10 +370,13 @@ export const leadRepository = {
 
   findByMobile: async (mobile: string) => {
     const normalized = normalizeMobile(mobile);
-    return LeadModel.find({ mobile: normalized, deletedAt: null })
+    const leads = await LeadModel.find({ mobile: normalized, deletedAt: null })
       .populate('assignedTo', 'name employeeId')
+      .populate('propertyType', 'name')
+      .populate('leadSource', 'name')
       .sort({ createdAt: -1 })
       .lean();
+    return attachLastFollowUps(leads as unknown as Record<string, unknown>[]);
   },
 
   findActiveByMobile: async (mobile: string) => {

@@ -308,6 +308,7 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
         open={followUpOpen}
         onOpenChange={setFollowUpOpen}
         initialStatus={lead?.status}
+        previousRemark={lead?.lastFollowUpRemark || lead?.initialRemark}
         onSubmit={handleFollowUp}
       />
     </>

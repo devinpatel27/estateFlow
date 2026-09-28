@@ -11,7 +11,7 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
-      sidebarCollapsed: false,
+      sidebarCollapsed: true,
       sidebarMobileOpen: false,
 
       toggleSidebar: () =>

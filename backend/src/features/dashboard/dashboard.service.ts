@@ -38,16 +38,17 @@ function getDateRanges(now = new Date()) {
 
 function buildFollowUpDateQuery(bucket: DateBucket, now = new Date()): FilterQuery<ILead> {
   const { startOfDay, endOfDay, tomorrowStart, tomorrowEnd } = getDateRanges(now);
+  const baseStatus = { status: { $in: ACTIVE_LEAD_STATUSES } };
 
   if (bucket === 'today') {
-    return { nextFollowUpDate: { $gte: startOfDay, $lte: endOfDay } };
+    return { nextFollowUpDate: { $gte: startOfDay, $lte: endOfDay }, ...baseStatus };
   }
   if (bucket === 'tomorrow') {
-    return { nextFollowUpDate: { $gte: tomorrowStart, $lte: tomorrowEnd } };
+    return { nextFollowUpDate: { $gte: tomorrowStart, $lte: tomorrowEnd }, ...baseStatus };
   }
   return {
     nextFollowUpDate: { $lt: startOfDay },
-    status: { $in: ACTIVE_LEAD_STATUSES },
+    ...baseStatus,
   };
 }
 
