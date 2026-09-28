@@ -3,10 +3,19 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const dbUrl = process.env.DATABASE_URL || process.env.MONGODB_URI || '';
+if (!process.env.DATABASE_URL && dbUrl) {
+  process.env.DATABASE_URL = dbUrl;
+}
+if (!process.env.MONGODB_URI && dbUrl) {
+  process.env.MONGODB_URI = dbUrl;
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.union([z.string(), z.number()]).default(5000).transform(Number),
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL or MONGODB_URI is required'),
+  MONGODB_URI: z.string().optional(),
   JWT_SECRET: z.string().default('realview_realty_crm_super_secure_jwt_secret_key_2026_xyz'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   ADMIN_NAME: z.string().default('Master Admin'),

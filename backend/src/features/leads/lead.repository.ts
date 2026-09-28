@@ -86,14 +86,21 @@ async function getLeadIdsWithScheduledVisitsDue(
     visitQuery.scheduledDate = { $lt: startOfDay };
   }
 
+  const activeLeadFilter: FilterQuery<ILead> = {
+    deletedAt: null,
+    status: { $in: ACTIVE_LEAD_STATUSES },
+  };
+
   if (options.assignedOnly && options.assignedToUserId) {
     const assignedTo = toObjectId(options.assignedToUserId);
     if (!assignedTo) return [];
-    const assignedLeads = await LeadModel.find({ assignedTo, deletedAt: null }).select('_id').lean();
-    const leadIds = assignedLeads.map((lead) => lead._id as Types.ObjectId);
-    if (leadIds.length === 0) return [];
-    visitQuery.leadId = { $in: leadIds };
+    activeLeadFilter.assignedTo = assignedTo;
   }
+
+  const activeLeads = await LeadModel.find(activeLeadFilter).select('_id').lean();
+  const leadIds = activeLeads.map((lead) => lead._id as Types.ObjectId);
+  if (leadIds.length === 0) return [];
+  visitQuery.leadId = { $in: leadIds };
 
   return VisitModel.distinct('leadId', visitQuery);
 }
@@ -318,13 +325,19 @@ export const leadRepository = {
     }
 
     if (options.followUpDue) {
+      if (!query.status) {
+        query.status = { $in: ACTIVE_LEAD_STATUSES };
+      }
       const now = new Date();
       const visitLeadIds = await getLeadIdsWithScheduledVisitsDue(options.followUpDue, options, now);
       const scheduleConditions: FilterQuery<ILead>[] = [
         buildFollowUpDueClause(options.followUpDue, now),
       ];
       if (visitLeadIds.length > 0) {
-        scheduleConditions.push({ _id: { $in: visitLeadIds } });
+        scheduleConditions.push({
+          _id: { $in: visitLeadIds },
+          status: { $in: ACTIVE_LEAD_STATUSES },
+        });
       }
       applyScheduleDueFilter(query, scheduleConditions);
     }
