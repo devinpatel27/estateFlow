@@ -21,7 +21,7 @@ import { LeadFollowUpModel } from '../models/LeadFollowUp.model';
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 async function backfillLatestNfd(): Promise<void> {
-  await mongoose.connect(env.MONGODB_URI, {
+  await mongoose.connect(env.DATABASE_URL, {
     serverSelectionTimeoutMS: 10000,
   });
   console.log('✅ MongoDB connected');

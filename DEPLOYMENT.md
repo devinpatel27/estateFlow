@@ -1,4 +1,4 @@
-# CRM Deployment Guide (Vercel + Render)
+# EstateFlow Demo Deployment Guide (Vercel + Neon PostgreSQL)
 
 Git repo root is this folder (`realview-realty-crm`):
 
@@ -18,8 +18,8 @@ realview-realty-crm/     ← GitHub repo root
 | Service | Platform | URL example |
 |---------|----------|-------------|
 | Next.js CRM UI | **Vercel** | `https://crm.yourdomain.com` |
-| Express API | **Render** | `https://realview-crm-api.onrender.com` |
-| MongoDB | **MongoDB Atlas** | Cloud connection string |
+| Express API | **Vercel** | `https://estateflow-api.vercel.app` |
+| Database | **Neon PostgreSQL** | Serverless PostgreSQL |
 
 Auth uses a **cookie on the Vercel domain** + **Bearer token** in API calls. Frontend and API can be on different domains — set CORS correctly on the backend.
 

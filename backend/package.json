@@ -15,6 +15,7 @@
     "render:build": "npm ci --include=dev --include=optional && npm run build",
     "render:start": "npm run render:build && npm start",
     "seed": "ts-node src/scripts/seedAdmin.ts",
+    "seed:demo": "ts-node src/scripts/seedDemo.ts",
     "import:enquiries": "ts-node src/scripts/importEnquiries.ts",
     "migrate:sql-backup": "ts-node src/scripts/migrateSqlBackup.ts",
     "backfill:latest-nfd": "ts-node src/scripts/backfillLatestNfd.ts"
@@ -34,15 +35,17 @@
     "express": "^4.19.2",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.4.3",
+    "mongoose": "file:vendor/mongoose-postgres",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "pg": "^8.16.3",
     "sharp": "^0.35.2",
     "typescript": "^5.5.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/mssql": "^12.3.0",
+    "@types/pg": "^8.15.5",
     "mssql": "^12.7.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0"

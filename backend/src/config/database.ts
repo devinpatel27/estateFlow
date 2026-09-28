@@ -1,12 +1,5 @@
-import dns from 'dns';
 import mongoose from 'mongoose';
 import { env } from './env';
-
-// Some local network setups (notably certain Windows configurations with
-// IPv6-only DNS resolvers) fail Node's SRV lookups against MongoDB Atlas
-// even though the OS resolver works fine. Prefer public resolvers as a
-// fallback to avoid spurious connection failures.
-dns.setServers([...dns.getServers(), '8.8.8.8', '1.1.1.1']);
 
 const MAX_RETRIES = 5;
 const RETRY_INTERVAL = 5000;
@@ -17,20 +10,20 @@ export const connectDatabase = async (): Promise<void> => {
   mongoose.set('strictQuery', true);
 
   mongoose.connection.on('connected', () => {
-    console.log('✅ MongoDB connected successfully');
+    console.log('✅ PostgreSQL connected successfully');
   });
 
   mongoose.connection.on('error', (err) => {
-    console.error('❌ MongoDB connection error:', err);
+    console.error('❌ PostgreSQL connection error:', err);
   });
 
   mongoose.connection.on('disconnected', () => {
-    console.warn('⚠️  MongoDB disconnected');
+    console.warn('⚠️  PostgreSQL disconnected');
   });
 
   const connect = async () => {
     try {
-      await mongoose.connect(env.MONGODB_URI, {
+      await mongoose.connect(env.DATABASE_URL, {
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
@@ -55,5 +48,5 @@ export const connectDatabase = async (): Promise<void> => {
 
 export const disconnectDatabase = async (): Promise<void> => {
   await mongoose.disconnect();
-  console.log('🔌 MongoDB disconnected');
+  console.log('🔌 PostgreSQL disconnected');
 };

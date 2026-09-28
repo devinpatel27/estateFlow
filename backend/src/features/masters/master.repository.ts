@@ -13,12 +13,13 @@ export const masterRepository = {
 
   findPropertyTypeById: async (id: string) => PropertyTypeModel.findById(id),
 
-  createPropertyType: async (data: { name: string; status?: string; sortOrder?: number }) => {
-    const slug = toSlug(data.name);
-    return PropertyTypeModel.create({ ...data, slug });
+  createPropertyType: async (data: { name?: string; status?: string; sortOrder?: number }) => {
+    const name = data.name || '';
+    const slug = toSlug(name);
+    return PropertyTypeModel.create({ ...data, name, slug });
   },
 
-  updatePropertyType: async (id: string, data: Partial<{ name: string; status: string; sortOrder: number }>) => {
+  updatePropertyType: async (id: string, data: { name?: string; status?: string; sortOrder?: number }) => {
     const update = { ...data };
     if (data.name) (update as { slug?: string }).slug = toSlug(data.name);
     return PropertyTypeModel.findByIdAndUpdate(id, update, { new: true, runValidators: true });
@@ -33,12 +34,13 @@ export const masterRepository = {
 
   findLeadSourceById: async (id: string) => LeadSourceModel.findById(id),
 
-  createLeadSource: async (data: { name: string; status?: string; sortOrder?: number }) => {
-    const slug = toSlug(data.name);
-    return LeadSourceModel.create({ ...data, slug });
+  createLeadSource: async (data: { name?: string; status?: string; sortOrder?: number }) => {
+    const name = data.name || '';
+    const slug = toSlug(name);
+    return LeadSourceModel.create({ ...data, name, slug });
   },
 
-  updateLeadSource: async (id: string, data: Partial<{ name: string; status: string; sortOrder: number }>) => {
+  updateLeadSource: async (id: string, data: { name?: string; status?: string; sortOrder?: number }) => {
     const update = { ...data };
     if (data.name) (update as { slug?: string }).slug = toSlug(data.name);
     return LeadSourceModel.findByIdAndUpdate(id, update, { new: true, runValidators: true });
@@ -60,13 +62,14 @@ export const masterRepository = {
 
   findFollowUpActivityById: async (id: string) => FollowUpActivityModel.findById(id),
 
-  createFollowUpActivity: async (data: { name: string; parent?: string; status?: string; sortOrder?: number }) => {
-    const slug = toSlug(data.name);
+  createFollowUpActivity: async (data: { name?: string; parent?: string; status?: string; sortOrder?: number }) => {
+    const name = data.name || '';
+    const slug = toSlug(name);
     const parent = data.parent || undefined;
-    return FollowUpActivityModel.create({ ...data, parent, slug });
+    return FollowUpActivityModel.create({ ...data, name, parent, slug });
   },
 
-  updateFollowUpActivity: async (id: string, data: Partial<{ name: string; parent: string; status: string; sortOrder: number }>) => {
+  updateFollowUpActivity: async (id: string, data: { name?: string; parent?: string; status?: string; sortOrder?: number }) => {
     const update = { ...data };
     if (data.name) (update as { slug?: string }).slug = toSlug(data.name);
     if (data.parent === '') (update as { parent?: undefined }).parent = undefined;

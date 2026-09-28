@@ -11,12 +11,13 @@ export const amenityRepository = {
 
   findById: async (id: string) => PropertyAmenityModel.findById(id),
 
-  create: async (data: { name: string; status?: string; sortOrder?: number }) => {
-    const slug = toSlug(data.name);
-    return PropertyAmenityModel.create({ ...data, slug });
+  create: async (data: { name?: string; status?: string; sortOrder?: number }) => {
+    const name = data.name || '';
+    const slug = toSlug(name);
+    return PropertyAmenityModel.create({ ...data, name, slug });
   },
 
-  update: async (id: string, data: Partial<{ name: string; status: string; sortOrder: number }>) => {
+  update: async (id: string, data: { name?: string; status?: string; sortOrder?: number }) => {
     const update = { ...data };
     if (data.name) (update as { slug?: string }).slug = toSlug(data.name);
     return PropertyAmenityModel.findByIdAndUpdate(id, update, { new: true, runValidators: true });

@@ -6,7 +6,7 @@ dotenv.config();
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.union([z.string(), z.number()]).default(5000).transform(Number),
-  MONGODB_URI: z.string().default('mongodb://localhost:27017/realview-crm'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().default('realview_realty_crm_super_secure_jwt_secret_key_2026_xyz'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   ADMIN_NAME: z.string().default('Master Admin'),

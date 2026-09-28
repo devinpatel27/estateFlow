@@ -210,7 +210,7 @@ export const leadService = {
     const updateData: Partial<ILead> = {
       ...data,
       updatedBy: new Types.ObjectId(userId),
-    } as Partial<ILead>;
+    } as unknown as Partial<ILead>;
 
     if (data.propertyType) updateData.propertyType = new Types.ObjectId(data.propertyType);
     if (data.leadSource) updateData.leadSource = new Types.ObjectId(data.leadSource);
