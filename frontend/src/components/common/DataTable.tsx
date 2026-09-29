@@ -225,21 +225,30 @@ export function DataTable<TData, TValue>({
 
       {/* Table */}
       <div className="crm-table-wrap overflow-x-auto">
-        <Table>
+        <Table className="min-w-full">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="bg-muted/40 hover:bg-muted/40">
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="text-xs font-semibold uppercase tracking-wide text-muted-foreground h-11 whitespace-nowrap"
-                    style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  const size = header.getSize();
+                  const minSize = header.column.columnDef.minSize;
+                  const maxSize = header.column.columnDef.maxSize;
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className="text-xs font-semibold uppercase tracking-wide text-muted-foreground h-11 whitespace-nowrap px-3"
+                      style={{
+                        width: size !== 150 ? size : undefined,
+                        minWidth: minSize,
+                        maxWidth: maxSize,
+                      }}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             ))}
           </TableHeader>
@@ -247,11 +256,22 @@ export function DataTable<TData, TValue>({
             {isLoading && data.length === 0 ? (
               Array.from({ length: pageSize }).map((_, i) => (
                 <TableRow key={i}>
-                  {tableColumns.map((_, j) => (
-                    <TableCell key={j}>
-                      <div className="h-4 bg-muted animate-pulse rounded" />
-                    </TableCell>
-                  ))}
+                  {tableColumns.map((col, j) => {
+                    const size = col.size;
+                    const minSize = col.minSize;
+                    return (
+                      <TableCell
+                        key={j}
+                        className="py-3 px-3"
+                        style={{
+                          width: size !== 150 ? size : undefined,
+                          minWidth: minSize,
+                        }}
+                      >
+                        <div className="h-4 bg-muted animate-pulse rounded" />
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             ) : table.getRowModel().rows.length ? (
@@ -272,11 +292,24 @@ export function DataTable<TData, TValue>({
                     getRowClassName?.(row.original)
                   )}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="h-12 py-2 align-middle">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const size = cell.column.getSize();
+                    const minSize = cell.column.columnDef.minSize;
+                    const maxSize = cell.column.columnDef.maxSize;
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className="py-2.5 px-3 align-middle"
+                        style={{
+                          width: size !== 150 ? size : undefined,
+                          minWidth: minSize,
+                          maxWidth: maxSize,
+                        }}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             ) : (

@@ -35,32 +35,34 @@ function LastDiscussedCell({ lead }: { lead: Lead }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex flex-col gap-1.5 min-w-[240px] max-w-[420px] py-0.5">
+    <div className="flex flex-col gap-1.5 w-full min-w-0 max-w-[340px] py-0.5">
       <div className="flex items-center gap-2">
         <NextFollowUpCell date={lead.nextFollowUpDate} />
       </div>
       {remark ? (
-        <div className="flex items-start gap-1.5 group">
-          <p
-            className="text-xs text-foreground/90 font-normal leading-relaxed whitespace-pre-wrap break-words cursor-pointer hover:text-foreground transition-colors"
-            title="Click to view dialog"
+        <div className="flex items-start gap-1.5 group min-w-0">
+          <div
+            className="flex-1 min-w-0 rounded-md border-l-2 border-primary/40 bg-muted/40 hover:bg-muted/70 px-2.5 py-1.5 cursor-pointer transition-colors"
+            title="Click to view full remark"
             onClick={(e) => {
               e.stopPropagation();
               setOpen(true);
             }}
           >
-            {remark}
-          </p>
+            <p className="text-xs text-foreground/90 font-normal leading-relaxed whitespace-pre-wrap break-all [overflow-wrap:anywhere] [word-break:break-word] line-clamp-3">
+              {remark}
+            </p>
+          </div>
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               setOpen(true);
             }}
-            className="shrink-0 text-muted-foreground/50 hover:text-primary p-0.5 rounded transition-colors"
-            title="View in dialog"
+            className="shrink-0 text-muted-foreground/50 hover:text-primary p-1 rounded transition-colors mt-0.5 cursor-pointer"
+            title="Open in modal"
           >
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink className="h-3.5 w-3.5" />
           </button>
         </div>
       ) : (
@@ -79,7 +81,7 @@ function LastDiscussedCell({ lead }: { lead: Lead }) {
                 {lead.customerName} ({lead.leadId})
               </DialogDescription>
             </DialogHeader>
-            <div className="my-2 rounded-lg border bg-muted/30 p-3 text-sm leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto">
+            <div className="my-2 rounded-lg border bg-muted/30 p-3 text-sm leading-relaxed whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-h-[300px] overflow-y-auto">
               {remark}
             </div>
             <div className="flex justify-end">
@@ -106,6 +108,7 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
         </div>
       ),
       size: 110,
+      minSize: 110,
     },
     {
       id: 'customerName',
@@ -127,7 +130,7 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
       cell: ({ row }) => {
         const lead = row.original;
         return (
-          <div className="min-w-0">
+          <div className="min-w-0 pr-1">
             <p className="text-sm font-semibold text-foreground truncate">{lead.customerName || '—'}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="text-xs text-muted-foreground font-mono">{lead.mobile}</span>
@@ -148,6 +151,7 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
         );
       },
       minSize: 150,
+      size: 160,
     },
     {
       id: 'propertyType',
@@ -161,6 +165,7 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
         </div>
       ),
       size: 120,
+      minSize: 110,
     },
     {
       id: 'priorityAndStatus',
@@ -172,13 +177,15 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
         </div>
       ),
       size: 130,
+      minSize: 120,
     },
     {
       id: 'nextFollowUpAndRemark',
       header: () => <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide">NFD & Last Discussed</span>,
       cell: ({ row }) => <LastDiscussedCell lead={row.original} />,
       minSize: 260,
-      size: 360,
+      size: 340,
+      maxSize: 380,
     },
     {
       id: 'assignment',
@@ -187,34 +194,38 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
         const assignee = row.original.assignedTo;
         if (!assignee) {
           return (
-            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground whitespace-nowrap">
               Unassigned
             </span>
           );
         }
         return (
-          <div>
-            <p className="text-xs font-medium">{assignee.name}</p>
-            <p className="text-[11px] text-muted-foreground">
+          <div className="min-w-0 pr-1">
+            <p className="text-xs font-semibold text-foreground whitespace-nowrap truncate">{assignee.name}</p>
+            <p className="text-[11px] text-muted-foreground whitespace-nowrap">
               {row.original.assignedAt ? formatDateTime(row.original.assignedAt) : assignee.employeeId || '—'}
             </p>
           </div>
         );
       },
-      size: 140,
+      size: 160,
+      minSize: 150,
     },
     {
       id: 'actions',
-      header: '',
+      header: () => <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-right block w-full pr-2">Actions</span>,
       cell: ({ row }) => (
-        <LeadRowActions
-          lead={row.original}
-          canEdit={actions.canEdit}
-          canFollowUp={actions.canFollowUp}
-          onRefresh={actions.onRefresh}
-        />
+        <div className="flex justify-end w-full pr-1">
+          <LeadRowActions
+            lead={row.original}
+            canEdit={actions.canEdit}
+            canFollowUp={actions.canFollowUp}
+            onRefresh={actions.onRefresh}
+          />
+        </div>
       ),
-      size: 180,
+      size: 185,
+      minSize: 185,
       enableHiding: false,
     },
   ];
