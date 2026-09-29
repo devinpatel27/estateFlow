@@ -37,15 +37,22 @@ export function LoginForm() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: 'demo@estateflow.com', password: 'Demo@12345' },
+    defaultValues: { email: 'admin@realviewrealty.com', password: 'Admin@1234' },
   });
 
   const useDemoCredentials = async () => {
-    form.setValue('email', 'demo@estateflow.com', { shouldValidate: true });
-    form.setValue('password', 'Demo@12345', { shouldValidate: true });
-    await navigator.clipboard?.writeText('demo@estateflow.com / Demo@12345');
+    form.setValue('email', 'admin@realviewrealty.com', { shouldValidate: true });
+    form.setValue('password', 'Admin@1234', { shouldValidate: true });
+    await navigator.clipboard?.writeText('admin@realviewrealty.com / Admin@1234');
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
+  };
+
+  const onSubmit = (values: LoginFormValues) => {
+    login({
+      email: values.email.trim().toLowerCase(),
+      password: values.password,
+    });
   };
 
   return (
@@ -93,7 +100,7 @@ export function LoginForm() {
               </div>
               <h2 className="mt-2 text-2xl font-bold text-white">Welcome back</h2>
               <p className="mt-1.5 text-sm text-slate-400">
-                Explore the complete CRM with the demo workspace
+                Sign in to access your RealView CRM dashboard
               </p>
             </div>
 
@@ -103,14 +110,14 @@ export function LoginForm() {
               className="mb-6 flex w-full items-center justify-between rounded-lg border border-blue-400/20 bg-blue-500/10 px-4 py-3 text-left transition-colors hover:bg-blue-500/15"
             >
               <span>
-                <span className="block text-xs font-semibold uppercase text-blue-300">Demo access</span>
-                <span className="mt-1 block text-sm text-slate-300">demo@estateflow.com · Demo@12345</span>
+                <span className="block text-xs font-semibold uppercase text-blue-300">Master Admin Credentials</span>
+                <span className="mt-1 block text-sm text-slate-300">admin@realviewrealty.com · Admin@1234</span>
               </span>
               {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4 text-blue-300" />}
             </button>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(login)} className="space-y-5">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                 <FormField
                   control={form.control}
                   name="email"

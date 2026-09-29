@@ -2,7 +2,7 @@ import { UserModel, IUser } from '../../models/User.model';
 
 export const authRepository = {
   findByEmail: async (email: string): Promise<IUser | null> => {
-    return UserModel.findOne({ email: email.toLowerCase() })
+    return UserModel.findOne({ email: email.trim().toLowerCase() })
       .select('+password')
       .populate('role', 'roleName permissions');
   },
