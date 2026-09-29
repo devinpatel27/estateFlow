@@ -41,3 +41,4 @@ backend/uploads/*
 
 # Coverage
 coverage/
+config.bat
