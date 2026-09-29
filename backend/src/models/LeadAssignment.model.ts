@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface ILeadAssignment extends Document {
+  _id: Types.ObjectId;
   leadId: Types.ObjectId;
   assignedTo: Types.ObjectId;
   assignedBy: Types.ObjectId;

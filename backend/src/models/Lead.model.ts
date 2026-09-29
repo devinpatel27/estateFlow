@@ -9,6 +9,7 @@ import {
 } from '../constants/lead.constants';
 
 export interface ILead extends Document {
+  _id: Types.ObjectId;
   leadId: string;
   customerName: string;
   mobile: string;

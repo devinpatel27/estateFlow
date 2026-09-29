@@ -44,9 +44,12 @@ export const enrichLeads = async <T extends LeanDoc>(leads: T[]): Promise<T[]> =
       : [],
   ]);
 
-  const propertyTypeMap = new Map(propertyTypes.map((item) => [String(item._id), item]));
-  const leadSourceMap = new Map(leadSources.map((item) => [String(item._id), item]));
-  const userMap = new Map(users.map((item) => [String(item._id), item]));
+  const propertyTypeMap = new Map<string, any>();
+  propertyTypes.forEach((item) => propertyTypeMap.set(String(item._id), item));
+  const leadSourceMap = new Map<string, any>();
+  leadSources.forEach((item) => leadSourceMap.set(String(item._id), item));
+  const userMap = new Map<string, any>();
+  users.forEach((item) => userMap.set(String(item._id), item));
 
   return leads.map((lead) => {
     const propertyTypeId = String(lead.propertyType ?? '');

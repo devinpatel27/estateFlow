@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 import { FOLLOW_UP_TYPES, FollowUpType, LEAD_PRIORITIES, LeadPriority } from '../constants/lead.constants';
 
 export interface ILeadFollowUp extends Document {
+  _id: Types.ObjectId;
   leadId: Types.ObjectId;
   assignmentId: Types.ObjectId;
   followUpDate: Date;

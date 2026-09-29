@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 import { LEAD_ACTIVITY_TYPES, LeadActivityType } from '../constants/lead.constants';
 
 export interface ILeadActivity extends Document {
+  _id: Types.ObjectId;
   leadId: Types.ObjectId;
   assignmentId?: Types.ObjectId;
   type: LeadActivityType;

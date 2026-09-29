@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IPropertyAmenity extends Document {
+  _id: mongoose.Types.ObjectId;
   name: string;
   slug: string;
   status: 'active' | 'inactive';

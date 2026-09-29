@@ -9,6 +9,7 @@ import {
 } from '../constants/visit.constants';
 
 export interface IVisit extends Document {
+  _id: Types.ObjectId;
   leadId: Types.ObjectId;
   assignmentId?: Types.ObjectId;
   followUpId?: Types.ObjectId;
