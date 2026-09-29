@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Pencil, Trash2, ArrowLeftRight, Plus, Phone, Mail, MapPin, Target, Calendar, MessageCircle, Lock,
+  Pencil, Trash2, ArrowLeftRight, Plus, Phone, Mail, MapPin, Target, Calendar, MessageCircle, Lock, History,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { AssignmentHistory } from './AssignmentHistory';
 import { Lead, LeadFollowUp } from '../types/lead.types';
 import { useLeadDetailData } from '../hooks/useFollowUps';
 import { useLeadActions } from '../hooks/useLeads';
+import { leadService } from '../services/lead.service';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS, LEAD_STATUSES } from '@/lib/constants';
 import { cn, formatCurrency, formatDate, formatDateTime, formatLeadCategoryShort } from '@/lib/utils';
@@ -56,6 +57,18 @@ export function LeadProfile({ lead, onRefresh }: LeadProfileProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [noteText, setNoteText] = useState('');
+  const [pastInquiries, setPastInquiries] = useState<Lead[]>([]);
+
+  useEffect(() => {
+    if (lead?.mobile) {
+      leadService.checkMobile(lead.mobile).then((res) => {
+        if (res.success && res.data?.closedLeads) {
+          const others = res.data.closedLeads.filter((l) => String(l._id) !== String(lead._id));
+          setPastInquiries(others);
+        }
+      }).catch(() => {});
+    }
+  }, [lead?._id, lead?.mobile]);
 
   const isClosedStatus = ['closed', 'booked'].includes(lead.status);
   const isLeadAdminUser = isReady && canViewAllLeads();
@@ -106,6 +119,34 @@ export function LeadProfile({ lead, onRefresh }: LeadProfileProps) {
               ? `This lead is currently ${lead.status === 'booked' ? 'Booked' : 'Closed'}. As an Admin, you can update its status or edit details to reopen it.`
               : `This lead is currently ${lead.status === 'booked' ? 'Booked' : 'Closed'} and locked. Regular edits, transfers, and follow-ups are restricted until an Admin reopens it.`}
           </span>
+        </div>
+      )}
+
+      {pastInquiries.length > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50/80 p-4 text-xs dark:border-amber-800/60 dark:bg-amber-950/20">
+          <div className="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-200">
+            <History className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <span>Reused Mobile Number — Prior Inquiries on Record ({pastInquiries.length})</span>
+          </div>
+          <p className="mt-1 text-muted-foreground text-[11px]">
+            This customer mobile number was previously registered under older/closed leads in the CRM:
+          </p>
+          <div className="mt-2.5 space-y-2 max-h-[160px] overflow-y-auto">
+            {pastInquiries.map((p) => (
+              <div key={p._id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-background/90 p-2.5 text-xs shadow-2xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-foreground">{p.leadId}</span>
+                  <span className="text-muted-foreground">•</span>
+                  <span>{p.customerName}</span>
+                  <LeadStatusBadge status={p.status} />
+                  <span className="text-[11px] text-muted-foreground">({formatDate(p.createdAt)})</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground max-w-[400px] truncate">
+                  {p.lastFollowUpRemark || p.initialRemark || 'No prior remark'}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

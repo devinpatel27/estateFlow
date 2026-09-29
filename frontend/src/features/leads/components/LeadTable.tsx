@@ -1,12 +1,20 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { Plus, Download, Target, X } from 'lucide-react';
+import { Plus, Download, Target, X, CheckSquare, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { DataTable } from '@/components/common/DataTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/common/EmptyState';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { LeadListToolbar } from './LeadListToolbar';
 import { LeadProcessDialog } from './LeadProcessDialog';
 import { useLeadList } from '../hooks/useLeads';
@@ -16,6 +24,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { PERMISSIONS } from '@/lib/constants';
 import { downloadCSV, formatDate, formatLeadPriority, formatLeadStatus, formatLeadCategoryShort } from '@/lib/utils';
 import { Lead, LeadListParams } from '../types/lead.types';
+import { leadService } from '../services/lead.service';
 
 interface LeadTableProps {
   onCreateLead?: () => void;
@@ -51,7 +60,35 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
   const [searchInput, setSearchInput] = useState(params.search || '');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [processOpen, setProcessOpen] = useState(false);
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  const [bulkStatus, setBulkStatus] = useState<string>('closed');
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const debouncedSearch = useDebounce(searchInput, 300);
+
+  const selectedLeadIds = useMemo(() => {
+    return Object.keys(rowSelection)
+      .filter((k) => rowSelection[k])
+      .map((k) => leads[parseInt(k)]?._id)
+      .filter(Boolean);
+  }, [rowSelection, leads]);
+
+  const handleBulkUpdateStatus = async (statusToSet: string) => {
+    if (selectedLeadIds.length === 0) return;
+    setIsBulkUpdating(true);
+    try {
+      const res = await leadService.bulkUpdateStatus(selectedLeadIds, statusToSet);
+      if (res.success) {
+        toast.success(`Updated ${res.data?.modifiedCount ?? selectedLeadIds.length} lead(s) to ${formatLeadStatus(statusToSet)}`);
+        setRowSelection({});
+        refetch();
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error?.response?.data?.message || 'Failed to update leads status');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
 
   const syncUrl = useCallback(
     (next: Pick<LeadListParams, 'followUpDue' | 'status' | 'priority' | 'nfdFrom' | 'nfdTo'>) => {
@@ -236,6 +273,62 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
         </div>
       )}
 
+      {selectedLeadIds.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 shadow-xs">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">
+              {selectedLeadIds.length} lead{selectedLeadIds.length !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={bulkStatus} onValueChange={setBulkStatus}>
+              <SelectTrigger className="h-9 w-[130px] bg-background text-xs font-medium">
+                <SelectValue placeholder="New Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="hold">Hold</SelectItem>
+                <SelectItem value="booked">Booked</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              size="sm"
+              variant="default"
+              disabled={isBulkUpdating}
+              onClick={() => handleBulkUpdateStatus(bulkStatus)}
+              className="h-9 gap-1.5 rounded-lg text-xs font-semibold"
+            >
+              {isBulkUpdating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              Update Status
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isBulkUpdating}
+              onClick={() => handleBulkUpdateStatus('closed')}
+              className="h-9 gap-1.5 rounded-lg border-rose-300 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400"
+            >
+              Close Selected
+            </Button>
+
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={isBulkUpdating}
+              onClick={() => setRowSelection({})}
+              className="h-9 text-xs text-muted-foreground"
+            >
+              Clear Selection
+            </Button>
+          </div>
+        </div>
+      )}
+
       <DataTable
         columns={columns}
         data={leads}
@@ -243,6 +336,9 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
         pageIndex={(params.page ?? 1) - 1}
         pageSize={params.limit ?? 10}
         pageCount={pageCount}
+        enableRowSelection
+        selectedRows={rowSelection}
+        onSelectionChange={setRowSelection}
         onPageChange={(p) => updateParams({ page: p + 1 })}
         onPageSizeChange={(s) => updateParams({ limit: s, page: 1 })}
         onSortChange={(sortBy, sortOrder) => updateParams({ sortBy, sortOrder, page: 1 })}

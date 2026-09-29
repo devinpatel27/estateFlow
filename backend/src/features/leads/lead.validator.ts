@@ -123,9 +123,18 @@ export const idParamSchema = z.object({
   params: z.object({ id: z.string().min(1) }),
 });
 
+export const bulkUpdateStatusSchema = z.object({
+  body: z.object({
+    leadIds: z.array(z.string().min(1)).min(1, 'At least one lead ID is required'),
+    status: z.enum(LEAD_STATUSES as unknown as [string, ...string[]]),
+    remark: z.string().optional(),
+  }),
+});
+
 export type CreateLeadInput = z.infer<typeof createLeadSchema>['body'];
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>['body'];
 export type UpdateStatusInput = z.infer<typeof updateStatusSchema>['body'];
+export type BulkUpdateStatusInput = z.infer<typeof bulkUpdateStatusSchema>['body'];
 export type TransferLeadInput = z.infer<typeof transferLeadSchema>['body'];
 export type CreateFollowUpInput = z.infer<typeof createFollowUpSchema>['body'];
 export type AddNoteInput = z.infer<typeof addNoteSchema>['body'];

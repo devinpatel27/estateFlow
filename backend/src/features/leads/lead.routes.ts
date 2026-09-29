@@ -9,6 +9,7 @@ import {
   listLeadsSchema,
   checkMobileSchema,
   updateStatusSchema,
+  bulkUpdateStatusSchema,
   transferLeadSchema,
   createFollowUpSchema,
   addNoteSchema,
@@ -32,6 +33,13 @@ leadRoutes.get(
   authorizeOneOf(PERMISSIONS.LEAD_READ, PERMISSIONS.LEAD_READ_ASSIGNED),
   validate(listLeadsSchema),
   leadController.list
+);
+
+leadRoutes.post(
+  '/bulk-status',
+  authorizeOneOf(PERMISSIONS.LEAD_STATUS_UPDATE, PERMISSIONS.LEAD_READ),
+  validate(bulkUpdateStatusSchema),
+  leadController.bulkUpdateStatus
 );
 
 leadRoutes.get(

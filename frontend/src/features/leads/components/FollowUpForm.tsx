@@ -177,7 +177,7 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus, prev
       title="Add Follow-Up"
       description="Record a follow-up activity for this lead"
       icon={CalendarPlus}
-      maxWidth="sm:max-w-3xl"
+      maxWidth="sm:max-w-4xl w-[96vw]"
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -329,8 +329,8 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus, prev
               <FormLabel>Remark{selectedParent ? <span className="ml-2 text-xs font-normal text-muted-foreground">for {selectedParent.name}</span> : null}</FormLabel>
               <FormControl>
                 <textarea
-                  className="crm-input min-h-[90px] w-full resize-y px-3 py-2 text-sm leading-relaxed"
-                  rows={3}
+                  className="crm-input min-h-[115px] w-full resize-y px-3 py-2.5 text-sm leading-relaxed"
+                  rows={4}
                   placeholder="What was discussed with the customer..."
                   {...field}
                 />

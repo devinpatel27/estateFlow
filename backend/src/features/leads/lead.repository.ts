@@ -66,7 +66,7 @@ function buildFollowUpDueClause(type: 'today' | 'tomorrow' | 'overdue', now = ne
   }
   return {
     nextFollowUpDate: { $lt: startOfDay },
-    status: { $in: ACTIVE_LEAD_STATUSES },
+    status: 'open',
   };
 }
 
@@ -88,7 +88,7 @@ async function getLeadIdsWithScheduledVisitsDue(
 
   const activeLeadFilter: FilterQuery<ILead> = {
     deletedAt: null,
-    status: { $in: ACTIVE_LEAD_STATUSES },
+    status: type === 'overdue' ? 'open' : { $in: ACTIVE_LEAD_STATUSES },
   };
 
   if (options.assignedOnly && options.assignedToUserId) {
@@ -326,7 +326,7 @@ export const leadRepository = {
 
     if (options.followUpDue) {
       if (!query.status) {
-        query.status = { $in: ACTIVE_LEAD_STATUSES };
+        query.status = options.followUpDue === 'overdue' ? 'open' : { $in: ACTIVE_LEAD_STATUSES };
       }
       const now = new Date();
       const visitLeadIds = await getLeadIdsWithScheduledVisitsDue(options.followUpDue, options, now);
@@ -336,7 +336,7 @@ export const leadRepository = {
       if (visitLeadIds.length > 0) {
         scheduleConditions.push({
           _id: { $in: visitLeadIds },
-          status: { $in: ACTIVE_LEAD_STATUSES },
+          status: options.followUpDue === 'overdue' ? 'open' : { $in: ACTIVE_LEAD_STATUSES },
         });
       }
       applyScheduleDueFilter(query, scheduleConditions);

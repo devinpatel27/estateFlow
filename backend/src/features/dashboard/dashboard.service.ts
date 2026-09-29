@@ -38,7 +38,7 @@ function getDateRanges(now = new Date()) {
 
 function buildFollowUpDateQuery(bucket: DateBucket, now = new Date()): FilterQuery<ILead> {
   const { startOfDay, endOfDay, tomorrowStart, tomorrowEnd } = getDateRanges(now);
-  const baseStatus = { status: { $in: ACTIVE_LEAD_STATUSES } };
+  const baseStatus = { status: 'open' };
 
   if (bucket === 'today') {
     return { nextFollowUpDate: { $gte: startOfDay, $lte: endOfDay }, ...baseStatus };
@@ -68,7 +68,7 @@ function buildVisitDateQuery(bucket: DateBucket, now = new Date()): FilterQuery<
 async function getLeadIdsForAssignee(userId: string): Promise<Types.ObjectId[]> {
   const assignedTo = toObjectId(userId);
   if (!assignedTo) return [];
-  const leads = await LeadModel.find({ assignedTo, deletedAt: null }).select('_id').lean();
+  const leads = await LeadModel.find({ assignedTo, deletedAt: null, status: 'open' }).select('_id').lean();
   return leads.map((l) => l._id as Types.ObjectId);
 }
 
@@ -89,7 +89,7 @@ function resolveTargetUserId(user: JwtPayload, employeeId?: string): string {
 }
 
 async function buildLeadFilter(userId: string, isScopedToUser: boolean): Promise<FilterQuery<ILead>> {
-  const filter: FilterQuery<ILead> = { deletedAt: null };
+  const filter: FilterQuery<ILead> = { deletedAt: null, status: 'open' };
   if (isScopedToUser) {
     const assignedTo = toObjectId(userId);
     if (!assignedTo) return { _id: { $in: [] } };
@@ -99,8 +99,14 @@ async function buildLeadFilter(userId: string, isScopedToUser: boolean): Promise
 }
 
 async function buildVisitLeadFilter(userId: string, isScopedToUser: boolean): Promise<FilterQuery<IVisit>> {
-  if (!isScopedToUser) return {};
-  const leadIds = await getLeadIdsForAssignee(userId);
+  const leadQuery: FilterQuery<ILead> = { deletedAt: null, status: 'open' };
+  if (isScopedToUser) {
+    const assignedTo = toObjectId(userId);
+    if (!assignedTo) return { leadId: { $in: [] } };
+    leadQuery.assignedTo = assignedTo;
+  }
+  const leads = await LeadModel.find(leadQuery).select('_id').lean();
+  const leadIds = leads.map((l) => l._id as Types.ObjectId);
   if (leadIds.length === 0) return { leadId: { $in: [] } };
   return { leadId: { $in: leadIds } };
 }
@@ -118,10 +124,8 @@ async function getEmployeeScheduleCounts(employeeId: string, now = new Date()) {
     };
   }
 
-  const leadFilter = { deletedAt: null, assignedTo };
-  const leadIds = await getLeadIdsForAssignee(employeeId);
-  const visitFilter =
-    leadIds.length > 0 ? { leadId: { $in: leadIds } } : { leadId: { $in: [] as Types.ObjectId[] } };
+  const leadFilter = { deletedAt: null, assignedTo, status: 'open' };
+  const visitFilter = await buildVisitLeadFilter(employeeId, true);
 
   const buckets: DateBucket[] = ['today', 'tomorrow', 'due'];
   const counts = await Promise.all(

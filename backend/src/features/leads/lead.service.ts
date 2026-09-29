@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import { FilterQuery, Types } from 'mongoose';
 import { leadRepository } from './lead.repository';
 import {
   getLeadAccessScope,
@@ -30,6 +30,7 @@ import {
   CreateLeadInput,
   UpdateLeadInput,
   UpdateStatusInput,
+  BulkUpdateStatusInput,
   TransferLeadInput,
   CreateFollowUpInput,
   AddNoteInput,
@@ -313,6 +314,62 @@ export const leadService = {
     });
 
     return updated;
+  },
+
+  bulkUpdateStatus: async (
+    data: BulkUpdateStatusInput,
+    user: JwtPayload,
+    ipAddress?: string
+  ) => {
+    const admin = isLeadAdmin(user.permissions);
+    const validObjectIds = data.leadIds.filter(isValidObjectId).map((id) => new Types.ObjectId(id));
+    if (validObjectIds.length === 0) {
+      throw new AppError('No valid lead IDs provided', 400);
+    }
+
+    const query: FilterQuery<ILead> = {
+      _id: { $in: validObjectIds },
+      deletedAt: null,
+    };
+
+    if (!admin) {
+      query.assignedTo = new Types.ObjectId(user.userId);
+      query.status = { $nin: ['closed', 'booked', 'closed_won', 'closed_lost'] };
+    }
+
+    const updateFields: Record<string, unknown> = {
+      status: data.status,
+      updatedBy: new Types.ObjectId(user.userId),
+    };
+
+    const isClosedOrBooked = (CLOSED_LEAD_STATUSES as readonly string[]).includes(data.status);
+    const updateOps: Record<string, unknown> = { $set: updateFields };
+    if (isClosedOrBooked) {
+      updateOps.$unset = { nextFollowUpDate: 1 };
+    }
+
+    const result = await LeadModel.updateMany(query, updateOps);
+
+    if (isClosedOrBooked) {
+      await VisitModel.updateMany(
+        { leadId: { $in: validObjectIds }, status: 'scheduled' },
+        { $set: { status: 'cancelled' } }
+      );
+    }
+
+    await logActivity({
+      userId: user.userId,
+      action: 'BULK_UPDATE_LEAD_STATUS',
+      module: 'LEAD',
+      description: `Bulk updated ${result.modifiedCount} leads to status: ${data.status}`,
+      ipAddress,
+    });
+
+    return {
+      modifiedCount: result.modifiedCount,
+      matchedCount: result.matchedCount,
+      status: data.status,
+    };
   },
 
   transfer: async (

@@ -18,7 +18,8 @@
     "seed:demo": "ts-node src/scripts/seedDemo.ts",
     "import:enquiries": "ts-node src/scripts/importEnquiries.ts",
     "migrate:sql-backup": "ts-node src/scripts/migrateSqlBackup.ts",
-    "backfill:latest-nfd": "ts-node src/scripts/backfillLatestNfd.ts"
+    "backfill:latest-nfd": "ts-node src/scripts/backfillLatestNfd.ts",
+    "close:overdue": "ts-node src/scripts/closeOverdueLeads.ts"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",

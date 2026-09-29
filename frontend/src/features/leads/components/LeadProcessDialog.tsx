@@ -2,12 +2,19 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { CalendarPlus, ExternalLink, Search, Target } from 'lucide-react';
+import { CalendarPlus, ExternalLink, Search, Target, History, FileText, Copy } from 'lucide-react';
 import { ModalShell } from '@/components/common/ModalShell';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DatePicker } from '@/components/common/DatePicker';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -22,7 +29,7 @@ import { Lead, LeadActivity, LeadFollowUp } from '../types/lead.types';
 import { leadService } from '../services/lead.service';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/constants';
-import { formatDate, formatDateTime, formatLeadCategoryShort } from '@/lib/utils';
+import { cn, formatDate, formatDateTime, formatLeadCategoryShort } from '@/lib/utils';
 import { FollowUpFormValues } from '../schemas/lead.schema';
 import { toast } from 'sonner';
 
@@ -51,6 +58,8 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
   const [search, setSearch] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [followUpOpen, setFollowUpOpen] = useState(false);
+  const [selectedRemark, setSelectedRemark] = useState<{ title: string; remark: string; by: string } | null>(null);
+  const [pastInquiries, setPastInquiries] = useState<Lead[]>([]);
 
   const isClosed = lead ? ['closed', 'booked'].includes(lead.status) : false;
   const canFollowUp = isReady && hasPermission(PERMISSIONS.LEAD_FOLLOWUP_CREATE) && (!isClosed || canViewAllLeads());
@@ -60,6 +69,7 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
     setIsLoading(true);
     setSearch('');
     setFilterDate('');
+    setPastInquiries([]);
     Promise.all([leadService.getActivities(lead._id), leadService.getFollowUps(lead._id)])
       .then(([act, fu]) => {
         if (act.success) setActivities(act.data || []);
@@ -76,7 +86,16 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
         toast.error('Failed to load lead progress');
       })
       .finally(() => setIsLoading(false));
-  }, [open, lead?._id]);
+
+    if (lead?.mobile) {
+      leadService.checkMobile(lead.mobile).then((res) => {
+        if (res.success && res.data?.closedLeads) {
+          const others = res.data.closedLeads.filter((l) => String(l._id) !== String(lead._id));
+          setPastInquiries(others);
+        }
+      }).catch(() => {});
+    }
+  }, [open, lead?._id, lead?.mobile]);
 
   const rows = useMemo(() => {
     if (!lead) return [];
@@ -167,7 +186,7 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
         title={lead.customerName}
         description={`Lead ${lead.leadId} · ${formatLeadCategoryShort(lead.category)} · ${lead.mobile}`}
         icon={Target}
-        maxWidth="sm:max-w-4xl"
+        maxWidth="sm:max-w-6xl w-[98vw]"
       >
         <div className="flex min-h-0 flex-1 flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -183,6 +202,30 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
               </Badge>
             )}
           </div>
+
+          {pastInquiries.length > 0 && (
+            <div className="rounded-xl border border-amber-300 bg-amber-50/80 p-3 text-xs dark:border-amber-800/60 dark:bg-amber-950/20">
+              <div className="flex items-center gap-1.5 font-semibold text-amber-900 dark:text-amber-200">
+                <History className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span>Reused Number — Prior Inquiries for this Mobile ({pastInquiries.length})</span>
+              </div>
+              <div className="mt-2 space-y-1.5 max-h-[120px] overflow-y-auto">
+                {pastInquiries.map((p) => (
+                  <div key={p._id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-background/90 px-3 py-1.5 text-xs shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-foreground">{p.leadId}</span>
+                      <span className="text-muted-foreground">•</span>
+                      <span>{p.customerName}</span>
+                      <LeadStatusBadge status={p.status} />
+                    </div>
+                    <div className="text-[11px] text-muted-foreground max-w-[320px] truncate">
+                      {p.lastFollowUpRemark || p.initialRemark || 'No prior discussion recorded'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-2">
             <div className="relative min-w-[160px] flex-1">
@@ -264,10 +307,29 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-[240px] py-2.5 text-xs">
-                        <p className="line-clamp-2" title={row.remark}>
-                          {row.remark || '—'}
-                        </p>
+                      <TableCell
+                        className={cn(
+                          'max-w-[280px] py-2.5 text-xs',
+                          row.remark ? 'cursor-pointer hover:bg-muted/60 transition-colors rounded group' : ''
+                        )}
+                        onClick={() => {
+                          if (row.remark) {
+                            setSelectedRemark({
+                              title: `${row.type} (${formatDateTime(row.date)})`,
+                              remark: row.remark,
+                              by: row.by || 'System',
+                            });
+                          }
+                        }}
+                      >
+                        <div className="flex items-start gap-1">
+                          <p className="line-clamp-2 leading-relaxed flex-1" title={row.remark ? 'Click to view full remark' : undefined}>
+                            {row.remark || '—'}
+                          </p>
+                          {row.remark && (
+                            <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground/50 group-hover:text-primary mt-0.5" />
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="whitespace-nowrap py-2.5 text-xs">
                         {row.nextFollowUp ? formatDate(row.nextFollowUp) : '—'}
@@ -311,6 +373,42 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
         previousRemark={lead?.lastFollowUpRemark || lead?.initialRemark}
         onSubmit={handleFollowUp}
       />
+
+      {selectedRemark && (
+        <Dialog open={!!selectedRemark} onOpenChange={(openState) => !openState && setSelectedRemark(null)}>
+          <DialogContent className="sm:max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <DialogHeader>
+              <DialogTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                Discussion & Remark Details
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                {selectedRemark.title} · Recorded by {selectedRemark.by}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="my-2 rounded-lg border bg-muted/30 p-3.5 text-sm leading-relaxed whitespace-pre-wrap max-h-[350px] overflow-y-auto">
+              {selectedRemark.remark}
+            </div>
+            <div className="flex justify-between items-center gap-2 pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 text-xs"
+                onClick={() => {
+                  navigator.clipboard.writeText(selectedRemark.remark);
+                  toast.success('Remark copied to clipboard');
+                }}
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Copy Remark
+              </Button>
+              <Button size="sm" onClick={() => setSelectedRemark(null)}>
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }

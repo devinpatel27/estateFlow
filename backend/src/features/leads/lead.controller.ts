@@ -90,6 +90,15 @@ export const leadController = {
     }
   },
 
+  bulkUpdateStatus: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await leadService.bulkUpdateStatus(req.body, req.user!, req.ip);
+      sendSuccess(res, 'Leads status updated successfully', result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   transfer: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const lead = await leadService.transfer(req.params.id, req.body, req.user!, req.ip);

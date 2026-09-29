@@ -64,6 +64,15 @@ export const leadService = {
     return res.data;
   },
 
+  bulkUpdateStatus: async (
+    leadIds: string[],
+    status: string,
+    remark?: string
+  ): Promise<ApiResponse<{ modifiedCount: number; matchedCount: number; status: string }>> => {
+    const res = await api.post('/leads/bulk-status', { leadIds, status, remark });
+    return res.data;
+  },
+
   transfer: async (id: string, data: { assignedTo: string; transferRemark: string }): Promise<ApiResponse<Lead>> => {
     const res = await api.post(`/leads/${id}/transfer`, data);
     return res.data;

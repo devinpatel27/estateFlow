@@ -76,6 +76,8 @@ interface DataTableProps<TData, TValue> {
   isLoading?: boolean;
   enableRowSelection?: boolean;
   onRowSelectionChange?: (rows: TData[]) => void;
+  selectedRows?: RowSelectionState;
+  onSelectionChange?: (selection: RowSelectionState) => void;
   toolbar?: React.ReactNode;
   toolbarActions?: React.ReactNode;
   emptyState?: React.ReactNode;
@@ -96,6 +98,8 @@ export function DataTable<TData, TValue>({
   isLoading,
   enableRowSelection,
   onRowSelectionChange,
+  selectedRows: controlledRowSelection,
+  onSelectionChange: controlledOnSelectionChange,
   toolbar,
   toolbarActions,
   emptyState,
@@ -105,7 +109,9 @@ export function DataTable<TData, TValue>({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
+  const rowSelection = controlledRowSelection ?? internalRowSelection;
+  const setRowSelection = controlledOnSelectionChange ?? setInternalRowSelection;
 
   const selectionColumn: ColumnDef<TData, unknown> = {
     id: 'select',
