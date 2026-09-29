@@ -35,15 +35,15 @@ function LastDiscussedCell({ lead }: { lead: Lead }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex flex-col gap-1 min-w-[200px] max-w-[340px]">
+    <div className="flex flex-col gap-1.5 min-w-[240px] max-w-[420px] py-0.5">
       <div className="flex items-center gap-2">
         <NextFollowUpCell date={lead.nextFollowUpDate} />
       </div>
       {remark ? (
         <div className="flex items-start gap-1.5 group">
           <p
-            className="text-xs text-muted-foreground line-clamp-2 leading-relaxed cursor-pointer hover:text-foreground transition-colors"
-            title="Click to view full remark"
+            className="text-xs text-foreground/90 font-normal leading-relaxed whitespace-pre-wrap break-words cursor-pointer hover:text-foreground transition-colors"
+            title="Click to view dialog"
             onClick={(e) => {
               e.stopPropagation();
               setOpen(true);
@@ -57,8 +57,8 @@ function LastDiscussedCell({ lead }: { lead: Lead }) {
               e.stopPropagation();
               setOpen(true);
             }}
-            className="shrink-0 text-muted-foreground/60 hover:text-primary p-0.5 rounded transition-colors"
-            title="View full remark"
+            className="shrink-0 text-muted-foreground/50 hover:text-primary p-0.5 rounded transition-colors"
+            title="View in dialog"
           >
             <ExternalLink className="h-3 w-3" />
           </button>
@@ -177,7 +177,8 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
       id: 'nextFollowUpAndRemark',
       header: () => <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide">NFD & Last Discussed</span>,
       cell: ({ row }) => <LastDiscussedCell lead={row.original} />,
-      minSize: 220,
+      minSize: 260,
+      size: 360,
     },
     {
       id: 'assignment',

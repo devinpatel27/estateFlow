@@ -11,8 +11,6 @@ import {
   Lock,
   ArrowRight,
   ShieldCheck,
-  Copy,
-  Check,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -32,21 +30,12 @@ import { cn } from '@/lib/utils';
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const { login, isLoading } = useAuth();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: 'admin@realviewrealty.com', password: 'Admin@1234' },
+    defaultValues: { email: '', password: '' },
   });
-
-  const useDemoCredentials = async () => {
-    form.setValue('email', 'admin@realviewrealty.com', { shouldValidate: true });
-    form.setValue('password', 'Admin@1234', { shouldValidate: true });
-    await navigator.clipboard?.writeText('admin@realviewrealty.com / Admin@1234');
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
-  };
 
   const onSubmit = (values: LoginFormValues) => {
     login({
@@ -103,18 +92,6 @@ export function LoginForm() {
                 Sign in to access your RealView CRM dashboard
               </p>
             </div>
-
-            <button
-              type="button"
-              onClick={useDemoCredentials}
-              className="mb-6 flex w-full items-center justify-between rounded-lg border border-blue-400/20 bg-blue-500/10 px-4 py-3 text-left transition-colors hover:bg-blue-500/15"
-            >
-              <span>
-                <span className="block text-xs font-semibold uppercase text-blue-300">Master Admin Credentials</span>
-                <span className="mt-1 block text-sm text-slate-300">admin@realviewrealty.com · Admin@1234</span>
-              </span>
-              {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4 text-blue-300" />}
-            </button>
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">

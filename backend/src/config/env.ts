@@ -20,7 +20,7 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('7d'),
   ADMIN_NAME: z.string().default('Master Admin'),
   ADMIN_EMAIL: z.string().default('admin@realviewrealty.com'),
-  ADMIN_PASSWORD: z.string().default('Admin@12345'),
+  ADMIN_PASSWORD: z.string().default('Admin@bhargav26'),
   UPLOAD_DIR: z.string().default('./uploads'),
   MAX_FILE_SIZE: z.union([z.string(), z.number()]).default(5242880).transform(Number),
   FRONTEND_URL: z.string().default('https://crm.realviewrealty.com'),
