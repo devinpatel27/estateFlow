@@ -47,10 +47,10 @@ export function DuplicateLeadAlert({ activeLead, closedLeads = [], onDismiss }: 
 
       {/* Closed Inquiries Warning / History */}
       {!activeLead && closedLeads.length > 0 && (
-        <div className="crm-card border-amber-300 bg-amber-50/80 p-4 dark:border-amber-800/60 dark:bg-amber-950/20">
-          <div className="flex items-start gap-3">
+        <div className="crm-card border-amber-300 bg-amber-50/80 p-4 dark:border-amber-800/60 dark:bg-amber-950/20 overflow-hidden min-w-0">
+          <div className="flex items-start gap-3 min-w-0">
             <History className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-amber-900 dark:text-amber-200">
                   Past Inquiry Record Found ({closedLeads.length})
@@ -65,14 +65,14 @@ export function DuplicateLeadAlert({ activeLead, closedLeads = [], onDismiss }: 
                 This mobile number was previously handled in the CRM. You can create a new lead, but please review the prior history below:
               </p>
 
-              <div className="mt-3 space-y-2">
+              <div className="mt-3 space-y-2 min-w-0">
                 {closedLeads.map((item) => {
                   const assignee = item.assignedTo;
                   const remark = item.lastFollowUpRemark || item.initialRemark;
                   return (
                     <div
                       key={item._id}
-                      className="rounded-lg border border-amber-200 bg-white/80 p-3 text-xs shadow-xs dark:border-amber-900/40 dark:bg-background/80"
+                      className="rounded-lg border border-amber-200 bg-white/80 p-3 text-xs shadow-xs dark:border-amber-900/40 dark:bg-background/80 overflow-hidden min-w-0"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-1.5">
                         <div className="flex items-center gap-2">
@@ -100,11 +100,11 @@ export function DuplicateLeadAlert({ activeLead, closedLeads = [], onDismiss }: 
                       </div>
 
                       {remark && (
-                        <div className="mt-2 rounded bg-amber-500/10 p-2 text-foreground/90">
+                        <div className="mt-2 rounded bg-amber-500/10 p-2 text-foreground/90 overflow-hidden min-w-0">
                           <span className="font-semibold text-amber-900 dark:text-amber-200 block text-[11px] mb-0.5">
                             Last Remark:
                           </span>
-                          <p className="text-xs leading-relaxed whitespace-pre-wrap">{remark}</p>
+                          <p className="text-xs leading-relaxed whitespace-pre-wrap break-all [overflow-wrap:anywhere] [word-break:break-word]">{remark}</p>
                         </div>
                       )}
                     </div>

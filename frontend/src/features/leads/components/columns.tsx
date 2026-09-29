@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
-import { ArrowUpDown, Copy, ExternalLink, FileText } from 'lucide-react';
+import { ArrowUpDown, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Lead } from '../types/lead.types';
 import { Button } from '@/components/ui/button';
@@ -10,13 +9,6 @@ import { LeadStatusBadge, LeadPriorityBadge } from './LeadStatusBadge';
 import { NextFollowUpCell } from './NextFollowUpCell';
 import { LeadRowActions } from './LeadRowActions';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 interface ColumnActions {
   canEdit: boolean;
@@ -32,65 +24,18 @@ function getMasterName(item: Lead['propertyType']): string {
 
 function LastDiscussedCell({ lead }: { lead: Lead }) {
   const remark = lead.lastFollowUpRemark;
-  const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex flex-col gap-1.5 w-full min-w-0 max-w-[340px] py-0.5">
+    <div className="flex flex-col gap-1 w-full min-w-0 py-1">
       <div className="flex items-center gap-2">
         <NextFollowUpCell date={lead.nextFollowUpDate} />
       </div>
       {remark ? (
-        <div className="flex items-start gap-1.5 group min-w-0">
-          <div
-            className="flex-1 min-w-0 rounded-md border-l-2 border-primary/40 bg-muted/40 hover:bg-muted/70 px-2.5 py-1.5 cursor-pointer transition-colors"
-            title="Click to view full remark"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(true);
-            }}
-          >
-            <p className="text-xs text-foreground/90 font-normal leading-relaxed whitespace-pre-wrap break-all [overflow-wrap:anywhere] [word-break:break-word] line-clamp-3">
-              {remark}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(true);
-            }}
-            className="shrink-0 text-muted-foreground/50 hover:text-primary p-1 rounded transition-colors mt-0.5 cursor-pointer"
-            title="Open in modal"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </button>
-        </div>
+        <p className="text-xs text-foreground/90 font-normal leading-relaxed whitespace-pre-wrap break-all [overflow-wrap:anywhere] [word-break:break-word]">
+          {remark}
+        </p>
       ) : (
         <span className="text-xs text-muted-foreground/50 italic">No remark yet</span>
-      )}
-
-      {open && (
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent onClick={(e) => e.stopPropagation()} className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-base flex items-center gap-2">
-                <FileText className="h-4 w-4 text-primary" />
-                Latest Follow-Up Discussion
-              </DialogTitle>
-              <DialogDescription className="text-xs">
-                {lead.customerName} ({lead.leadId})
-              </DialogDescription>
-            </DialogHeader>
-            <div className="my-2 rounded-lg border bg-muted/30 p-3 text-sm leading-relaxed whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-h-[300px] overflow-y-auto">
-              {remark}
-            </div>
-            <div className="flex justify-end">
-              <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
-                Close
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       )}
     </div>
   );
@@ -107,8 +52,8 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
           <span className="text-[11px] text-muted-foreground whitespace-nowrap">{formatDate(row.original.createdAt)}</span>
         </div>
       ),
-      size: 110,
-      minSize: 110,
+      size: 95,
+      minSize: 90,
     },
     {
       id: 'customerName',
@@ -131,9 +76,9 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
         const lead = row.original;
         return (
           <div className="min-w-0 pr-1">
-            <p className="text-sm font-semibold text-foreground truncate">{lead.customerName || '—'}</p>
+            <p className="text-xs font-semibold text-foreground truncate">{lead.customerName || '—'}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-xs text-muted-foreground font-mono">{lead.mobile}</span>
+              <span className="text-[11px] text-muted-foreground font-mono">{lead.mobile}</span>
               <button
                 type="button"
                 onClick={(e) => {
@@ -150,8 +95,8 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
           </div>
         );
       },
-      minSize: 150,
-      size: 160,
+      minSize: 120,
+      size: 130,
     },
     {
       id: 'propertyType',
@@ -164,8 +109,8 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
           )}
         </div>
       ),
-      size: 120,
-      minSize: 110,
+      size: 105,
+      minSize: 95,
     },
     {
       id: 'priorityAndStatus',
@@ -176,16 +121,15 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
           <LeadStatusBadge status={row.original.status} />
         </div>
       ),
-      size: 130,
-      minSize: 120,
+      size: 105,
+      minSize: 95,
     },
     {
       id: 'nextFollowUpAndRemark',
       header: () => <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide">NFD & Last Discussed</span>,
       cell: ({ row }) => <LastDiscussedCell lead={row.original} />,
-      minSize: 260,
-      size: 340,
-      maxSize: 380,
+      minSize: 320,
+      size: 460,
     },
     {
       id: 'assignment',
@@ -194,7 +138,7 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
         const assignee = row.original.assignedTo;
         if (!assignee) {
           return (
-            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground whitespace-nowrap">
               Unassigned
             </span>
           );
@@ -208,8 +152,8 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
           </div>
         );
       },
-      size: 160,
-      minSize: 150,
+      size: 140,
+      minSize: 130,
     },
     {
       id: 'actions',
@@ -224,8 +168,8 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
           />
         </div>
       ),
-      size: 185,
-      minSize: 185,
+      size: 175,
+      minSize: 170,
       enableHiding: false,
     },
   ];
