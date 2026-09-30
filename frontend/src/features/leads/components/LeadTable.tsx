@@ -33,7 +33,7 @@ interface LeadTableProps {
 function buildLeadQueryString(params: Pick<LeadListParams, 'followUpDue' | 'status' | 'priority' | 'nfdFrom' | 'nfdTo'>) {
   const q = new URLSearchParams();
   if (params.followUpDue) q.set('followUpDue', params.followUpDue);
-  if (params.status) q.set('status', params.status);
+  if (params.status && params.status !== 'open') q.set('status', params.status);
   if (params.priority) q.set('priority', params.priority);
   if (params.nfdFrom) q.set('nfdFrom', params.nfdFrom);
   if (params.nfdTo) q.set('nfdTo', params.nfdTo);
@@ -46,7 +46,7 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
   const searchParams = useSearchParams();
   const { hasPermission, canViewAllLeads, isReady } = usePermissions();
   const initialFollowUpDue = searchParams.get('followUpDue') as 'today' | 'tomorrow' | 'overdue' | null;
-  const initialStatus = searchParams.get('status') || undefined;
+  const initialStatus = searchParams.get('status') || 'open';
   const initialPriority = searchParams.get('priority') || undefined;
   const initialNfdFrom = searchParams.get('nfdFrom') || undefined;
   const initialNfdTo = searchParams.get('nfdTo') || undefined;
@@ -123,7 +123,7 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
 
   useEffect(() => {
     const followUpDue = searchParams.get('followUpDue') as 'today' | 'tomorrow' | 'overdue' | null;
-    const status = searchParams.get('status') || undefined;
+    const status = searchParams.get('status') || 'open';
     const priority = searchParams.get('priority') || undefined;
     const nfdFrom = searchParams.get('nfdFrom') || undefined;
     const nfdTo = searchParams.get('nfdTo') || undefined;
@@ -169,7 +169,7 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
   const clearFilters = () => {
     updateParams({
       followUpDue: undefined,
-      status: undefined,
+      status: 'open',
       priority: undefined,
       category: undefined,
       propertyConfiguration: undefined,
@@ -184,7 +184,7 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
 
   const hasActiveFilter = Boolean(
     params.followUpDue ||
-    params.status ||
+    (params.status && params.status !== 'open') ||
     params.priority ||
     params.category ||
     params.propertyConfiguration ||

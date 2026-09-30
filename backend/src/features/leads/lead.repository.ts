@@ -290,7 +290,7 @@ export const leadRepository = {
     }
 
     if (options.assignedOnly) {
-      if (options.status) {
+      if (options.status && options.status !== 'all') {
         const bucket = LEAD_STATUS_BUCKETS[options.status as keyof typeof LEAD_STATUS_BUCKETS];
         const requested = bucket ? (bucket as readonly string[]) : [options.status];
         const allowed = requested.filter((s) => (ACTIVE_LEAD_STATUSES as readonly string[]).includes(s));
@@ -301,14 +301,14 @@ export const leadRepository = {
       } else {
         query.status = { $in: ACTIVE_LEAD_STATUSES };
       }
-    } else if (options.status) {
+    } else if (options.status && options.status !== 'all') {
       const bucket = LEAD_STATUS_BUCKETS[options.status as keyof typeof LEAD_STATUS_BUCKETS];
       query.status = bucket ? { $in: bucket } : options.status;
     }
     if (options.category) query.category = options.category;
     if (options.priority) {
       query.priority = options.priority;
-      if (!options.status && !options.assignedOnly) {
+      if ((!options.status || options.status === 'all') && !options.assignedOnly) {
         query.status = { $in: ACTIVE_LEAD_STATUSES };
       }
     }

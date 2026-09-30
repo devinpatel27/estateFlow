@@ -43,9 +43,12 @@ export function LeadListToolbar({
     ? LEAD_STATUSES
     : LEAD_STATUSES.filter((s) => !['closed', 'booked'].includes(s.value));
 
-  const statusLabel = params.status
-    ? formatLeadStatus(params.status)
-    : 'All Status';
+  const statusLabel =
+    params.status === 'all'
+      ? 'All Status'
+      : params.status
+      ? formatLeadStatus(params.status)
+      : 'Open';
   const priorityLabel = params.priority
     ? formatLeadPriority(params.priority)
     : 'All Priority';
@@ -95,8 +98,8 @@ export function LeadListToolbar({
       </div>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
         <Select
-          value={params.status || 'all'}
-          onValueChange={(v) => onParamsChange({ status: v === 'all' ? undefined : v, page: 1 })}
+          value={params.status || 'open'}
+          onValueChange={(v) => onParamsChange({ status: v, page: 1 })}
         >
           <SelectTrigger className="crm-select-trigger w-full cursor-pointer text-sm">
             <Filter className="mr-1.5 h-3.5 w-3.5 shrink-0" />

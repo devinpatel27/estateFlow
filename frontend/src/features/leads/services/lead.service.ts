@@ -30,7 +30,13 @@ function buildFollowUpPayload(data: FollowUpFormValues): Record<string, string> 
 
 export const leadService = {
   list: async (params: LeadListParams): Promise<PaginatedResponse<Lead>> => {
-    const res = await api.get('/leads', { params });
+    const cleanParams: Record<string, unknown> = { ...params };
+    if (cleanParams.status === 'all') delete cleanParams.status;
+    if (cleanParams.priority === 'all') delete cleanParams.priority;
+    if (cleanParams.category === 'all') delete cleanParams.category;
+    if (cleanParams.propertyConfiguration === 'all') delete cleanParams.propertyConfiguration;
+    if (cleanParams.followUpDue === 'all') delete cleanParams.followUpDue;
+    const res = await api.get('/leads', { params: cleanParams });
     return res.data;
   },
 
