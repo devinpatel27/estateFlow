@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: string | Date | undefined | null, pattern = 'dd MMM yyyy'): string {
+export function formatDate(date: string | Date | undefined | null, pattern = 'dd/MM/yy'): string {
   if (!date) return '—';
   try {
     return format(new Date(date), pattern);
@@ -16,7 +16,7 @@ export function formatDate(date: string | Date | undefined | null, pattern = 'dd
 }
 
 export function formatDateTime(date: string | Date | undefined | null): string {
-  return formatDate(date, 'dd MMM yyyy, hh:mm a');
+  return formatDate(date, 'dd/MM/yy, hh:mm a');
 }
 
 export function getInitials(name?: string | null): string {

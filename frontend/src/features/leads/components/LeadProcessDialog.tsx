@@ -309,8 +309,8 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
                       </TableCell>
                       <TableCell
                         className={cn(
-                          'max-w-[280px] py-2.5 text-xs',
-                          row.remark ? 'cursor-pointer hover:bg-muted/60 transition-colors rounded group' : ''
+                          'min-w-[260px] max-w-[440px] py-2.5 text-xs',
+                          row.remark ? 'cursor-pointer hover:bg-muted/60 transition-colors rounded-md group p-2' : ''
                         )}
                         onClick={() => {
                           if (row.remark) {
@@ -322,12 +322,12 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
                           }
                         }}
                       >
-                        <div className="flex items-start gap-1">
-                          <p className="line-clamp-2 leading-relaxed flex-1" title={row.remark ? 'Click to view full remark' : undefined}>
+                        <div className="flex items-start gap-1.5 w-full">
+                          <p className="leading-relaxed whitespace-pre-wrap break-all [overflow-wrap:anywhere] flex-1 text-foreground/90" title={row.remark ? 'Click to copy / expand full remark' : undefined}>
                             {row.remark || '—'}
                           </p>
                           {row.remark && (
-                            <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground/50 group-hover:text-primary mt-0.5" />
+                            <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground/40 group-hover:text-primary mt-0.5" />
                           )}
                         </div>
                       </TableCell>
@@ -386,7 +386,7 @@ export function LeadProcessDialog({ lead, open, onOpenChange, onRefresh }: LeadP
                 {selectedRemark.title} · Recorded by {selectedRemark.by}
               </DialogDescription>
             </DialogHeader>
-            <div className="my-2 rounded-lg border bg-muted/30 p-3.5 text-sm leading-relaxed whitespace-pre-wrap max-h-[350px] overflow-y-auto">
+            <div className="my-2 rounded-lg border bg-muted/30 p-3.5 text-sm leading-relaxed whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-h-[450px] overflow-y-auto">
               {selectedRemark.remark}
             </div>
             <div className="flex justify-between items-center gap-2 pt-2">

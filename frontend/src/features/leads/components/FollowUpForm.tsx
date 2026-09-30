@@ -186,7 +186,7 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus, prev
               <span className="font-semibold text-primary uppercase text-[10px] tracking-wider block mb-1">
                 Previous Discussion / Latest Remark
               </span>
-              <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">{previousRemark}</p>
+              <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap break-all [overflow-wrap:anywhere]">{previousRemark}</p>
             </div>
           )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -290,7 +290,7 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus, prev
                           <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', expandedParent === activity._id && 'rotate-180')} />
                         </button>
                         {expandedParent === activity._id && children.length > 0 && (
-                          <div className="grid grid-cols-1 gap-2 border-t border-border/70 p-2 sm:grid-cols-2">
+                          <div className="grid grid-cols-1 gap-2 border-t border-border/70 p-2.5 sm:grid-cols-2 md:grid-cols-3">
                             {children.map((child) => {
                               const selected = childActivity === child._id;
                               return (
@@ -329,8 +329,8 @@ export function FollowUpForm({ open, onOpenChange, onSubmit, initialStatus, prev
               <FormLabel>Remark{selectedParent ? <span className="ml-2 text-xs font-normal text-muted-foreground">for {selectedParent.name}</span> : null}</FormLabel>
               <FormControl>
                 <textarea
-                  className="crm-input min-h-[115px] w-full resize-y px-3 py-2.5 text-sm leading-relaxed"
-                  rows={4}
+                  className="crm-input min-h-[160px] sm:min-h-[180px] w-full resize-y px-3.5 py-3 text-sm leading-relaxed"
+                  rows={6}
                   placeholder="What was discussed with the customer..."
                   {...field}
                 />

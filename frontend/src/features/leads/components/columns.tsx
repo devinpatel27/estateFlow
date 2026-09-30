@@ -8,13 +8,14 @@ import { Button } from '@/components/ui/button';
 import { LeadStatusBadge, LeadPriorityBadge } from './LeadStatusBadge';
 import { NextFollowUpCell } from './NextFollowUpCell';
 import { LeadRowActions } from './LeadRowActions';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate, formatDateTime, cn } from '@/lib/utils';
 
 interface ColumnActions {
   canEdit: boolean;
   canFollowUp: boolean;
   canViewAllLeads: boolean;
   onRefresh?: () => void;
+  onRemarkClick?: (lead: Lead) => void;
 }
 
 function getMasterName(item: Lead['propertyType']): string {
@@ -22,16 +23,34 @@ function getMasterName(item: Lead['propertyType']): string {
   return typeof item === 'string' ? item : item.name;
 }
 
-function LastDiscussedCell({ lead }: { lead: Lead }) {
+function LastDiscussedCell({
+  lead,
+  onRemarkClick,
+}: {
+  lead: Lead;
+  onRemarkClick?: (lead: Lead) => void;
+}) {
   const remark = lead.lastFollowUpRemark;
 
   return (
-    <div className="flex flex-col gap-1 w-full min-w-0 py-1">
+    <div
+      className={cn(
+        'flex flex-col gap-1 w-full min-w-0 py-1 rounded-md transition-colors',
+        onRemarkClick && 'cursor-pointer hover:bg-muted/40 p-1.5'
+      )}
+      onClick={(e) => {
+        if (onRemarkClick) {
+          e.stopPropagation();
+          onRemarkClick(lead);
+        }
+      }}
+      title={onRemarkClick ? 'Click to view follow-up history & remarks' : undefined}
+    >
       <div className="flex items-center gap-2">
         <NextFollowUpCell date={lead.nextFollowUpDate} />
       </div>
       {remark ? (
-        <p className="text-xs text-foreground/90 font-normal leading-relaxed whitespace-pre-wrap break-all [overflow-wrap:anywhere] [word-break:break-word]">
+        <p className="text-xs text-foreground/90 font-normal leading-relaxed whitespace-pre-wrap break-all [overflow-wrap:anywhere] [word-break:break-word] hover:text-primary transition-colors">
           {remark}
         </p>
       ) : (
@@ -127,7 +146,7 @@ export function getLeadColumns(actions: ColumnActions): ColumnDef<Lead>[] {
     {
       id: 'nextFollowUpAndRemark',
       header: () => <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide">NFD & Last Discussed</span>,
-      cell: ({ row }) => <LastDiscussedCell lead={row.original} />,
+      cell: ({ row }) => <LastDiscussedCell lead={row.original} onRemarkClick={actions.onRemarkClick} />,
       minSize: 320,
       size: 460,
     },

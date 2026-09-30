@@ -199,6 +199,10 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
     canFollowUp,
     canViewAllLeads: canViewAllLeads(),
     onRefresh: refetch,
+    onRemarkClick: (lead) => {
+      setSelectedLead(lead);
+      setProcessOpen(true);
+    },
   });
 
   const toolbar = (
@@ -342,10 +346,7 @@ export function LeadTable({ onCreateLead }: LeadTableProps) {
         onPageChange={(p) => updateParams({ page: p + 1 })}
         onPageSizeChange={(s) => updateParams({ limit: s, page: 1 })}
         onSortChange={(sortBy, sortOrder) => updateParams({ sortBy, sortOrder, page: 1 })}
-        onRowClick={(lead) => {
-          setSelectedLead(lead);
-          setProcessOpen(true);
-        }}
+
         isLoading={isLoading}
         toolbar={toolbar}
         toolbarActions={toolbarActions}
